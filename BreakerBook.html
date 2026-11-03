@@ -85,6 +85,12 @@ textarea{width:100%;font:inherit;color:inherit;background:var(--bg);border:1px s
 #phdlg.open{display:flex}
 #phdlg .box{background:var(--pn);padding:16px;border-radius:8px;width:min(92vw,460px);display:grid;gap:8px;border:1px solid var(--ln);max-height:90vh;overflow:auto}
 @media print{#phdlg{display:none!important}}
+#phdlg .box.wide{width:min(96vw,980px)}
+.pg{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
+.pgl{max-height:62vh;overflow:auto;border:1px solid var(--ln);border-radius:6px}
+.pgl img{width:100%;height:auto;display:block}
+.pgr{max-height:62vh;overflow:auto;padding-right:4px}
+@media(max-width:640px){.pg{grid-template-columns:1fr}.pgl{max-height:40vh}.pgr{max-height:none}}
 </style></head><body>
 <header><b>BreakerBook</b>
 <button data-act="open">Open file</button><button data-act="save">Save file</button><button data-act="printOpts">Print</button><button data-act="undo">Undo</button><button data-act="new">New</button>
@@ -467,6 +473,7 @@ function loadScript(src){return new Promise((res,rej)=>{const s=document.createE
 let phPending=null,phCtx={panel:null,url:null};
 function phStage(stage){
   const box=$('phbox');
+  box.classList.toggle('wide',stage==='guide');
   if(stage==='pick'){
     box.innerHTML=`<h3 style="margin:0">Import breakers from a photo</h3>
       <p class="sm">Choose the panel, then the photo. You type each label beside the photo, so no text reader is used. The photo stays on this iPad and is not uploaded.</p>
@@ -481,8 +488,10 @@ function phStage(stage){
     }
     box.innerHTML=`<h3 style="margin:0">Photo guide: ${esc(p.name)}</h3>
       <p class="sm">Type the label for each slot that matches the photo. Leave a slot blank if it's empty. Amps can be left blank.</p>
-      <img src="${phCtx.url}" alt="Panel photo" style="width:100%;border-radius:6px">
-      ${rows||'<p class="sm">This panel has no slots. Set its total slots first.</p>'}
+      <div class="pg">
+        <div class="pgl"><img src="${phCtx.url}" alt="Panel photo"></div>
+        <div class="pgr">${rows||'<p class="sm">This panel has no slots. Set its total slots first.</p>'}</div>
+      </div>
       <div class="row"><button data-act="phApply">Add breakers</button><button data-act="phCancel">Cancel</button></div>`;
   }else if(stage==='conflicts'){
     const cf=phPending.conflicts;
