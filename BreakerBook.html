@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>BreakerBook</title>
+
 <style>
 :root{color-scheme:light dark;--bg:#f5f5f3;--fg:#1d1d1f;--pn:#fff;--ln:#cfcfca;--ac:#2b6cb0}
 @media(prefers-color-scheme:dark){:root{--bg:#1c1c1e;--fg:#f2f2f2;--pn:#2a2a2d;--ln:#48484c}}
@@ -34,6 +35,10 @@ h3{font-size:12px;text-transform:uppercase;letter-spacing:.05em;opacity:.65;marg
  .sheet{page-break-after:always;font:10pt system-ui,sans-serif;color:#000}
  .sheet:last-child{page-break-after:auto}
  .sheet h2{font-size:15pt;margin:0 0 2pt}
+ .sheet .addr{font-size:16pt;font-weight:bold;margin:0 0 6pt}
+ .qr{display:flex;gap:10pt;align-items:center;margin:0 0 8pt}
+ .qr svg{width:1.1in;height:1.1in}
+ .qr p{font-size:9pt;margin:0;word-break:break-all}
  .sheet h3{font-size:11pt;opacity:1;text-transform:none;margin:8pt 0 3pt;color:#000}
  .plan{width:7.5in;height:auto;min-height:0;display:block}
  table{border-collapse:collapse;width:100%;font-size:9pt;margin:4px 0}
@@ -76,6 +81,10 @@ textarea{width:100%;font:inherit;color:inherit;background:var(--bg);border:1px s
 #cdlg h3{text-transform:none;font-size:15px;opacity:1}
 @media print{#cdlg{display:none!important}}
 .edit{border:2px solid var(--ac);border-radius:8px;padding:8px;margin:8px 0;background:var(--bg)}
+#phdlg{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;z-index:9}
+#phdlg.open{display:flex}
+#phdlg .box{background:var(--pn);padding:16px;border-radius:8px;width:min(92vw,460px);display:grid;gap:8px;border:1px solid var(--ln);max-height:90vh;overflow:auto}
+@media print{#phdlg{display:none!important}}
 </style></head><body>
 <header><b>BreakerBook</b>
 <button data-act="open">Open file</button><button data-act="save">Save file</button><button data-act="printOpts">Print</button><button data-act="undo">Undo</button><button data-act="new">New</button>
@@ -108,6 +117,8 @@ textarea{width:100%;font:inherit;color:inherit;background:var(--bg);border:1px s
   <h3 id="cmsg" style="margin:0"></h3>
   <div class="row"><button class="danger" data-act="cYes">Yes</button><button data-act="cNo">Cancel</button></div>
 </div></div>
+<div id="phdlg"><div class="box" id="phbox"></div></div>
+<input type="file" id="phFile" accept="image/*" hidden>
 <div id="print"></div>
 <script>
 const DT=['Outlet','Switch','Light','Fan','Fixture','Other'];
@@ -245,50 +256,11 @@ function editor(){
   const c=(k,l,v)=>`<label class="sm"><input type="checkbox" data-f="${k}" ${v?'checked':''} style="width:auto"> ${l}</label>`;
   let b='';
   if(sel.kind==='room')b=f('name','Name',o.name)+s('floor','Floor',S.floors.map((n,i)=>[i,n]),o.floor)+f('w','Width (ft, top to bottom)',o.w,'number')+f('h','Length (ft, left to right)',o.h,'number');
-  if(sel.kind==='device')b=f('name','Name',o.name)+s('type','Type',DT.map(t=>[t,t]),o.type)+s('room','Room',[['','(none)'],...S.rooms.map(r=>[r.id,r.name])],o.room)+s('breaker','Breaker',[['','(none)'],...S.breakers.map(x=>[x.id,bnum(x)+(x.label?' '+x.label:'')])],o.breaker)+s('ctrl','Controlled from (switch or previous light)',[['','(none)'],...S.devices.filter(x=>x.id!==o.id&&x.floor===o.floor).map(x=>[x.id,x.name+' ('+x.type+')'])],o.ctrl)+c('gfci','GFCI protected',o.gfci)+c('critical','Critical load (sump pump, fridge, freezer)',o.critical);
+  if(sel.kind==='device')b=f('name','Name',o.name)+s('type','Type',DT.map(t=>[t,t]),o.type)+s('room','Room',[['','(none)'],...S.rooms.map(r=>[r.id,r.name])],o.room)+s('breaker','Breaker',[['','(none)'],...S.breakers.map(x=>[x.id,bnum(x)+(x.label?' '+x.label:'')])],o.breaker)+s('ctrl','Controlled from (same breaker only)',[['','(none)'],...(o.breaker?S.devices.filter(x=>x.id!==o.id&&x.floor===o.floor&&x.breaker===o.breaker):[]).map(x=>[x.id,x.name+' ('+x.type+')'])],o.ctrl)+c('gfci','GFCI protected',o.gfci)+c('critical','Critical load (sump pump, fridge, freezer)',o.critical);
   if(sel.kind==='breaker')b=f('label','Name / label',o.label)+s('panel','Panel',S.panels.map(p=>[p.id,p.name]),o.panel)+f('slot','Slot',o.slot,'number')+s('pole','Pole',[['','Single'],['A','A (tandem)'],['B','B (tandem)']],o.pole)+f('amps','Amps',o.amps)+s('type','Type',BT.map(t=>[t,t]),o.type)+s('status','Status',[['used','Used'],['unused','Unused']],o.status)+s('feedsPanel','Feeds subpanel',[['','(none)'],...S.panels.filter(p=>p.id!==o.panel).map(p=>[p.id,p.name])],o.feedsPanel);
   if(sel.kind==='panel')b=f('name','Name',o.name)+f('location','Location',o.location)+s('floor','Floor',S.floors.map((n,i)=>[i,n]),o.floor)+f('total','Total slots',o.total,'number');
   return b+`<div class="row" style="margin-top:8px"><button class="danger" data-act="del">Delete ${sel.kind}</button></div>`;
 }
-function renderSideOld(){
-  const list=(arr,fn)=>arr.map(fn).join('')||'<p class="sm">None yet.</p>';
-  const roomsHere=S.rooms.filter(r=>r.floor===cur);
-  const needs=S.devices.filter(d=>!d.breaker||!d.room);
-  const roomOpts=[['','(none)'],...S.rooms.map(r=>[r.id,r.name+' ('+(S.floors[r.floor]||'')+')'])];
-  const brkOpts=[['','(none)'],...S.breakers.map(b=>[b.id,bnum(b)+' '+panelName(b.panel)])];
-  const panelOpts=S.panels.map(p=>[p.id,p.name]);
-  $('side').innerHTML=`
-  <h3>Selected</h3>${editor()}
-  <h3>Floors</h3>
-  <div class="row"><button data-act="setupOpen">Run setup</button></div>
-  <div class="row"><input id="fName" placeholder="New floor name (e.g. Basement)"><button data-act="addFloor">Add floor</button></div>
-  <h3>Rooms in ${esc(S.floors[cur]||'')}</h3>
-  ${S.floors.length?list(roomsHere,r=>`<div class="it ${sel?.id===r.id?'sel':''}" data-act="sel" data-kind="room" data-id="${r.id}"><span>${esc(r.name)}</span><span class="sm">W ${r.w} × L ${r.h} ft</span></div>`):'<p class="sm">Add a floor first.</p>'}
-  <div class="row"><input id="rName" placeholder="Room name"></div>
-  <div class="row"><input id="rW" type="number" placeholder="Width ft"><input id="rH" type="number" placeholder="Length ft"><button data-act="addRoom">Add room</button></div>
-  <h3>Add device</h3>
-  <div class="row"><select id="dType">${DT.map(t=>`<option>${t}</option>`).join('')}</select><input id="dName" placeholder="Name (e.g. ceiling light)"></div>
-  <div class="row"><select id="dRoom">${roomOpts.map(([v,t])=>`<option value="${esc(v)}">${esc(t)}</option>`).join('')}</select></div>
-  <div class="row"><select id="dBrk">${brkOpts.map(([v,t])=>`<option value="${esc(v)}">${esc(t)}</option>`).join('')}</select></div>
-  <label class="sm"><input type="checkbox" id="dGfci" style="width:auto"> GFCI protected</label>
-  <div class="row"><button data-act="addDevice">Add device</button></div>
-  <h3>Needs assignment</h3>
-  ${list(needs,d=>`<div class="it ${sel?.id===d.id?'sel':''}" data-act="sel" data-kind="device" data-id="${d.id}"><span><span class="dot" style="background:#d33"></span>${esc(d.name)} <span class="sm">${esc(d.type)}${d.room?'':' · no room'}${d.breaker?'':' · no breaker'}</span></span></div>`)}
-  <h3>Panels</h3>
-  ${list(S.panels,p=>`<div class="it ${sel?.id===p.id?'sel':''}" data-act="sel" data-kind="panel" data-id="${p.id}"><span>${esc(p.name)} <span class="sm">${esc(p.location)}</span></span><span class="sm">${avail(p).length} available</span></div>`)}
-  <div class="row"><input id="pName" placeholder="Panel name (e.g. Main)"></div>
-  <div class="row"><input id="pLoc" placeholder="Location"><input id="pTot" type="number" placeholder="Total slots"></div>
-  <div class="row"><button data-act="addPanel">Add panel to this floor</button></div>
-  <h3>Breakers</h3>
-  ${list(S.breakers,b=>`<div class="it ${sel?.id===b.id?'sel':''}"><span><span class="dot" style="background:${colorOf(b.id)}"></span><b>${esc(bnum(b))}</b> ${esc(b.label)} <span class="sm">${esc(b.amps)}A · ${esc(b.type)}${b.status==='unused'?' · Unused':''}${b.feedsPanel?' · feeds '+esc(panelName(b.feedsPanel)):''}</span></span><button data-act="sel" data-kind="breaker" data-id="${b.id}">Edit</button></div>`)}
-  ${S.panels.map(p=>`<p class="sm"><b>${esc(p.name)}</b> available: ${avail(p).join(', ')||'none'}</p>`).join('')}
-  <div class="row"><select id="bPanel">${panelOpts.map(([v,t])=>`<option value="${esc(v)}">${esc(t)}</option>`).join('')}</select><input id="bSlot" type="number" placeholder="Slot"></div>
-  <div class="row"><select id="bPole"><option value="">Single</option><option value="A">A (tandem)</option><option value="B">B (tandem)</option></select><input id="bAmps" placeholder="Amps"></div>
-  <div class="row"><select id="bType">${BT.map(t=>`<option>${t}</option>`).join('')}</select><select id="bStatus"><option value="used">Used</option><option value="unused">Unused</option></select></div>
-  <div class="row"><input id="bLabel" placeholder="Name / label (e.g. Kitchen counter)"><select id="bFeeds"><option value="">Feeds no subpanel</option>${panelOpts.map(([v,t])=>`<option value="${esc(v)}">Feeds ${esc(t)}</option>`).join('')}</select></div>
-  <div class="row"><button data-act="addBreaker">Add breaker</button></div>`;
-}
-// Plan markup for one floor, reusing the on-screen drawing.
 function floorMarkup(f){const keep=cur,ks=sel;cur=f;sel=null;drawPlan();const m=$('svg').innerHTML;cur=keep;sel=ks;drawPlan();return m}
 // Crop the drawing to the floor's content so symbols and text print at a readable size.
 function floorBox(f){
@@ -300,6 +272,13 @@ function floorBox(f){
   if(x0>=1e9)return [0,0,VW,VH];
   return [x0-20,y0-20,x1-x0+40,y1-y0+40];
 }
+// QR code linking to the app's web address (not to any home record).
+function appQR(){
+  const url=location.protocol.startsWith('http')?location.origin+location.pathname:'';
+  if(!url||typeof qrcode==='undefined')return '<div class="qr"><p>Open BreakerBook at its web address to create the QR code.</p></div>';
+  const q=qrcode(0,'M');q.addData(url);q.make();
+  return `<div class="qr">${q.createSvgTag({cellSize:3,margin:1})}<p>BreakerBook: scan to open the app<br>${esc(url)}</p></div>`;
+}
 function sheetHTML(f){
   const name=S.floors[f],devs=S.devices.filter(d=>d.floor===f);
   const rn=id=>(S.rooms.find(r=>r.id===id)||{}).name||'(no room)';
@@ -310,8 +289,9 @@ function sheetHTML(f){
   const devRow=d=>{const b=S.breakers.find(x=>x.id===d.breaker);return `<tr><td>${esc(d.name)}</td><td>${esc(d.type)}</td><td>${esc(rn(d.room))}</td><td>${b?esc(panelName(b.panel)):'<span style="color:#c53030">NOT ASSIGNED</span>'}</td><td>${b?esc(bnum(b)):''}</td><td>${d.gfci?'Yes':''}</td><td>${d.critical?'Yes':''}</td></tr>`};
   const safe=(items,label)=>items.length?`<p><b>${label}:</b> ${items.map(d=>esc(d.name)+' ('+esc(rn(d.room))+', breaker '+esc(bn(d.breaker))+')').join('; ')}</p>`:'';
   return `<section class="sheet">
+    ${S.showAddress&&S.address?`<p class="addr">${esc(S.address)}</p>`:''}
+    ${f===0?appQR():''}
     <h2>BreakerBook · ${esc(name)}</h2>
-    ${S.showAddress&&S.address?`<p>${esc(S.address)}</p>`:''}
     <h3>Summary: breakers and rooms</h3>
     ${brks.length?`<table><tr><th>Breaker</th><th>Label</th><th>Panel</th><th>Rooms</th></tr>${brks.map(brkRow).join('')}</table>`:'<p>No breakers assigned on this floor.</p>'}
     ${panels.map(p=>`<p><b>${esc(p.name)}</b>${p.location?' ('+esc(p.location)+')':''}: available slots ${avail(p).join(', ')||'none'}; unused breakers ${S.breakers.filter(b=>b.panel===p.id&&b.status==='unused').map(bnum).join(', ')||'none'}</p>`).join('')}
@@ -325,7 +305,10 @@ function sheetHTML(f){
     <div class="disc"><p>Last updated: ${esc(S.updated||'Not saved yet')}</p><p>For reference only. All electrical work should be done by a licensed electrician.</p></div>
   </section>`;
 }
-function buildPrint(){
+async function buildPrint(){
+  const standalone=window.navigator.standalone||matchMedia('(display-mode: standalone)').matches;
+  if(standalone){alert('Printing does not work from the Home Screen version of BreakerBook on iPad. Open the BreakerBook web address in Safari to print.');return}
+  try{if(typeof qrcode==='undefined')await loadScript('https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js')}catch(e){}
   $('print').innerHTML=S.floors.length?S.floors.map((n,i)=>sheetHTML(i)).join(''):'<p>Add a floor first.</p>';
   window.print();
 }
@@ -343,27 +326,6 @@ function bformHTML(){
     <select id="bfFeeds"><option value="">Feeds no subpanel</option>${S.panels.filter(q=>q.id!==bform.panel).map(q=>`<option value="${q.id}"${q.id===v.feedsPanel?' selected':''}>Feeds ${esc(q.name)}</option>`).join('')}</select></div>
     <div class="row"><button data-act="bfSave">Save</button>${b?'<button class="danger" data-act="bfDel">Delete</button>':''}${b&&b.slot2?`<button data-act="split" data-id="${b.id}">Split</button>`:''}<button data-act="bfCancel">Cancel</button></div>`;
 }
-function renderBrkOld(){
-  const half=(b,pole,p,n)=>b
-    ?`<div class="h ${b.status==='unused'?'off':''}" data-act="bedit" data-id="${b.id}"><b style="color:${colorOf(b.id)}">${esc(bnum(b))}</b>${esc(b.amps)}A ${esc(b.label)}${b.type!=='Standard'?' · '+esc(b.type):''}${b.status==='unused'?' · UNUSED':''}</div>`
-    :`<div class="h empty" data-act="bnew" data-panel="${p.id}" data-slot="${n}" data-pole="${pole}">Open${pole?' '+pole:''}</div>`;
-  const cols=S.panels.map(p=>{
-    let rows='';
-    for(let n=1;n<=(p.total||0);n++){
-      const bs=S.breakers.filter(b=>b.panel===p.id&&b.slot===n);
-      const full=bs.find(b=>!b.pole),a=bs.find(b=>b.pole==='A'),bb=bs.find(b=>b.pole==='B');
-      const handle=full?half(full,'',p,n):`<div class="hl">${half(a,'A',p,n)}${half(bb,'B',p,n)}</div>`;
-      rows+=`<div class="slot"><span class="sn">${n}</span>${handle}</div>`;
-    }
-    return `<div class="pnl"><b>${esc(p.name)}</b> <span class="sm">${esc(p.location)}</span>${rows}</div>`;
-  }).join('');
-  $('bview').innerHTML=`
-    <div class="row" style="margin-bottom:10px"><input id="bpName" placeholder="Panel name (e.g. Main)"><input id="bpLoc" placeholder="Location"><input id="bpTot" type="number" placeholder="Slots"><button data-act="bpAdd">Add panel</button></div>
-    ${bform?`<div class="bf">${bformHTML()}</div>`:''}
-    ${cols||'<p class="sm">Add a panel to start entering breakers.</p>'}`;
-}
-// Setup wizard: floors, then rooms (optional), panels, and breakers.
-let W={step:'floors',wantRooms:'0',rooms:[],panels:[],panelText:''};
 function openWiz(){W={step:'floors',wantRooms:'0',rooms:[],panels:[],panelText:''};showWiz()}
 function showWiz(step){if(step)W.step=step;document.querySelector('#sdlg .box').innerHTML=wizHTML();$('sdlg').classList.add('open')}
 function wizHTML(){
@@ -425,7 +387,7 @@ function renderBrk(){
     return `<div class="pnl"><b>${esc(p.name)}</b> <span class="sm">${esc(p.location)}</span><div class="cols"><div>${odd}</div><div>${even}</div></div></div>`;
   }).join('');
   $('bview').innerHTML=`
-    <div class="row" style="margin-bottom:10px"><input id="bpName" placeholder="Panel name (e.g. Main)"><input id="bpLoc" placeholder="Location"><input id="bpTot" type="number" placeholder="Slots"><button data-act="bpAdd">Add panel</button></div>
+    <div class="row" style="margin-bottom:10px"><input id="bpName" placeholder="Panel name (e.g. Main)"><input id="bpLoc" placeholder="Location"><input id="bpTot" type="number" placeholder="Slots"><button data-act="bpAdd">Add panel</button><button data-act="photo">Import from photo</button></div>
     ${bform?`<div class="bf">${bformHTML()}</div>`:''}
     ${cols||'<p class="sm">Add a panel to start entering breakers.</p>'}`;
 }
@@ -499,12 +461,74 @@ function renderSide(){
 // Yes/Cancel confirmation; the action runs only if the user taps Yes.
 let pendingYes=null;
 function askConfirm(msg,fn){pendingYes=fn;$('cmsg').textContent=msg;$('cdlg').classList.add('open')}
+// Outside libraries load only when needed (printing for the QR code, reading a photo for Tesseract).
+function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=()=>rej(new Error('load failed'));document.head.appendChild(s)})}
+// Photo import: the photo is read on this iPad by Tesseract. The person checks every line before it is added.
+function phStage(stage,text=''){
+  const box=$('phbox');
+  if(stage==='warn')box.innerHTML=`<h3 style="margin:0">Import breakers from a photo</h3>
+    <p class="sm">The photo is read by a text-reading tool called Tesseract. It is downloaded the first time and runs on this iPad, so the photo is not uploaded. The breaker information is created by that tool, not by BreakerBook, so check every line before it is added.</p>
+    <div class="row"><button data-act="phChoose">Choose photo</button><button data-act="phCancel">Enter manually instead</button></div>`;
+  else if(stage==='conflicts'){
+    const cf=phPending.conflicts;
+    box.innerHTML=`<h3 style="margin:0">Slots already in use</h3>
+      <p class="sm">These slots already have a breaker. Choose Update to replace its amps or name with the photo's, or Skip to keep the current one.</p>
+      ${cf.map((c,i)=>`<div class="row"><span style="flex:2"><b>${esc(bnum(c.ex))}</b> now: ${esc(c.ex.amps)}A ${esc(c.ex.label)}<br><span class="sm">Photo: ${esc(c.b.slot)}${esc(c.b.pole)}, ${esc(c.b.amps||'no amps')}, ${esc(c.b.funcs)}</span></span><select data-cf="${i}"><option value="skip">Skip</option><option value="update">Update</option></select></div>`).join('')}
+      <div class="row"><button data-act="phConfirm">Apply choices</button><button data-act="phAll">Update all</button></div>`;
+  }
+  else if(stage==='busy')box.innerHTML=`<h3 style="margin:0">Reading photo…</h3><p class="sm">This can take a minute the first time.</p>`;
+  else box.innerHTML=`<h3 style="margin:0">Check the recognized lines</h3>
+    <p class="sm">Each line should be: slot, amps, rooms or functions. Amps can be left blank and filled in from another photo or later. Lines starting with ?? could not be read. Fix them or delete them.</p>
+    <select id="phPanel">${S.panels.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select>
+    <textarea id="phText" rows="8">${esc(text)}</textarea>
+    <div class="row"><button data-act="phApply">Add breakers</button><button data-act="phCancel">Cancel</button></div>`;
+}
+function photoLines(text){
+  return text.split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{
+    const m=l.match(/^(\d{1,2})([ABab])?(?:[\s,.:-]+(\d{1,3})\s*A?)?(?:[\s,.:-]+|$)(.*)$/);
+    return m?`${m[1]}${(m[2]||'').toUpperCase()}, ${m[3]||''}, ${(m[4]||'').trim()}`:`?? ${l}`;
+  }).join('\n');
+}
+async function readPhoto(f){
+  try{if(typeof Tesseract==='undefined')await loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js')}
+  catch(err){alert('The text reader could not load. Check the internet connection, or enter the breakers manually.');phStage('warn');return}
+  phStage('busy');
+  try{const r=await Tesseract.recognize(f,'eng');phStage('review',photoLines(r.data.text))}
+  catch(err){phStage('warn');alert('The photo could not be read. Try again, or enter the breakers manually.')}
+}
+let phPending=null; // {p, conflicts:[{b,ex}], added} while the conflict step is open
+function addPhotoBreaker(p,b){
+  if(b.pole){p.tandem=p.tandem||{};p.tandem[b.slot]=true}
+  S.breakers.push({id:uid('b'),panel:p.id,slot:b.slot,pole:b.pole,amps:b.amps,type:'Standard',status:'used',label:b.funcs,funcs:b.funcs,feedsPanel:''});
+}
+function updateFromPhoto(ex,b){
+  if(b.amps)ex.amps=b.amps;
+  if(b.funcs){ex.funcs=b.funcs;ex.label=b.funcs}
+}
+function finishPhoto(added,updated){
+  $('phdlg').classList.remove('open');phPending=null;
+  setStat(`Added ${added}${updated?`, updated ${updated}`:''}. Import another photo to add more.`);
+}
+function applyPhoto(){
+  const p=S.panels.find(x=>x.id===$('phPanel').value);
+  if(!p){setStat('Choose a panel.');return}
+  let added=0;const conflicts=[];
+  parseBrk($('phText').value).forEach(b=>{
+    const ex=S.breakers.find(x=>x.panel===p.id&&(x.slot===b.slot||x.slot2===b.slot));
+    if(ex){conflicts.push({b,ex});return}
+    addPhotoBreaker(p,b);added++;
+  });
+  if(conflicts.length){phPending={p,conflicts,added};phStage('conflicts');return}
+  finishPhoto(added,0);
+}
+
 // Undo: every change to the data is recorded when the screen redraws (the saved timestamp is ignored).
 let undoStack=[],lastSnap=null;
 const snapKey=()=>{const {updated,...rest}=S;return JSON.stringify(rest)};
 function newFile(){S=blank();VW=960;VH=640;undoStack=[];lastSnap=null;cur=0;sel=null;bform=null;dirty=false;currentName='breakerbook';setStat('New file. Save to keep it.');render()}
 function maybeSetup(){if(!S.setupDone&&!S.floors.length&&!$('sdlg').classList.contains('open'))openWiz()}
 function render(){
+  S.devices.forEach(d=>{if(d.ctrl){const c=S.devices.find(x=>x.id===d.ctrl);if(!c||!d.breaker||c.breaker!==d.breaker)d.ctrl=''}});
   const key=snapKey();
   if(lastSnap!==null&&key!==lastSnap){undoStack.push(lastSnap);if(undoStack.length>50)undoStack.shift()}
   lastSnap=key;
@@ -613,6 +637,22 @@ document.addEventListener('click',e=>{
     }
     bform=null;
   }
+  else if(a==='photo'){phStage('warn');$('phdlg').classList.add('open');changed=false}
+  else if(a==='phChoose'){$('phFile').click();changed=false}
+  else if(a==='phCancel'){$('phdlg').classList.remove('open');changed=false}
+  else if(a==='phApply'){applyPhoto()}
+  else if(a==='phConfirm'){
+    let upd=0;
+    document.querySelectorAll('[data-cf]').forEach(sel=>{
+      const c=phPending.conflicts[+sel.dataset.cf];
+      if(sel.value==='update'){updateFromPhoto(c.ex,c.b);upd++}
+    });
+    finishPhoto(phPending.added,upd);
+  }
+  else if(a==='phAll'){
+    phPending.conflicts.forEach(c=>updateFromPhoto(c.ex,c.b));
+    finishPhoto(phPending.added,phPending.conflicts.length);
+  }
   else if(a==='undo'){
     if(undoStack.length){S=JSON.parse(undoStack.pop());lastSnap=snapKey();sel=null;bform=null;setStat('Undone.')}
     else setStat('Nothing to undo.');
@@ -697,6 +737,7 @@ document.addEventListener('click',e=>{
 });
 
 document.addEventListener('change',e=>{
+  if(e.target.id==='phFile'){const f=e.target.files[0];e.target.value='';if(f)readPhoto(f);return}
   if(e.target.dataset&&e.target.dataset.fl!==undefined){
     const i=+e.target.dataset.fl;S.floors[i]=e.target.value.trim()||S.floors[i];touch();render();return;
   }
@@ -726,6 +767,7 @@ document.addEventListener('change',e=>{
   const old=o[f];
   o[f]=v;
   if(sel.kind==='device'&&f==='room')placeDev(o);
+  if(sel.kind==='device'&&f==='breaker'&&o.ctrl){const c=S.devices.find(x=>x.id===o.ctrl);if(!c||c.breaker!==o.breaker)o.ctrl=''}
   if(sel.kind==='room'){
     if(f==='floor')S.devices.forEach(d=>{if(d.room===o.id)d.floor=o.floor});
     clampRoom(o);
