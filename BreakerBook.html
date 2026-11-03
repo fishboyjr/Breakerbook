@@ -461,45 +461,44 @@ function renderSide(){
 // Yes/Cancel confirmation; the action runs only if the user taps Yes.
 let pendingYes=null;
 function askConfirm(msg,fn){pendingYes=fn;$('cmsg').textContent=msg;$('cdlg').classList.add('open')}
-// Outside libraries load only when needed (printing for the QR code, reading a photo for Tesseract).
+// Outside libraries load only when needed (printing, for the QR code).
 function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=()=>rej(new Error('load failed'));document.head.appendChild(s)})}
-// Photo import: the photo is read on this iPad by Tesseract. The person checks every line before it is added.
-function phStage(stage,text=''){
+// Photo import (photo as a guide): the person types each label beside the photo. No text reader is used.
+let phPending=null,phCtx={panel:null,url:null};
+function phStage(stage){
   const box=$('phbox');
-  if(stage==='warn')box.innerHTML=`<h3 style="margin:0">Import breakers from a photo</h3>
-    <p class="sm">The photo is read by a text-reading tool called Tesseract. It is downloaded the first time and runs on this iPad, so the photo is not uploaded. The breaker information is created by that tool, not by BreakerBook, so check every line before it is added.</p>
-    <div class="row"><button data-act="phChoose">Choose photo</button><button data-act="phCancel">Enter manually instead</button></div>`;
-  else if(stage==='conflicts'){
+  if(stage==='pick'){
+    box.innerHTML=`<h3 style="margin:0">Import breakers from a photo</h3>
+      <p class="sm">Choose the panel, then the photo. You type each label beside the photo, so no text reader is used. The photo stays on this iPad and is not uploaded.</p>
+      <select id="phPanel">${S.panels.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select>
+      <div class="row"><button data-act="phChoose">Choose photo</button><button data-act="phCancel">Cancel</button></div>`;
+  }else if(stage==='guide'){
+    const p=phCtx.panel,n=p.total||0;
+    let rows='';
+    for(let i=1;i<=n;i++){
+      const ex=S.breakers.find(x=>x.panel===p.id&&(x.slot===i||x.slot2===i));
+      rows+=`<div class="row" style="margin:2px 0"><span class="sn" style="flex:0 0 28px">${i}</span><input data-sl="${i}" placeholder="${ex?'Now: '+esc(bnum(ex))+' '+esc(ex.label):'Label or rooms'}" style="flex:3"><input data-am="${i}" placeholder="Amps" style="flex:1"></div>`;
+    }
+    box.innerHTML=`<h3 style="margin:0">Photo guide: ${esc(p.name)}</h3>
+      <p class="sm">Type the label for each slot that matches the photo. Leave a slot blank if it's empty. Amps can be left blank.</p>
+      <img src="${phCtx.url}" alt="Panel photo" style="width:100%;border-radius:6px">
+      ${rows||'<p class="sm">This panel has no slots. Set its total slots first.</p>'}
+      <div class="row"><button data-act="phApply">Add breakers</button><button data-act="phCancel">Cancel</button></div>`;
+  }else if(stage==='conflicts'){
     const cf=phPending.conflicts;
     box.innerHTML=`<h3 style="margin:0">Slots already in use</h3>
       <p class="sm">These slots already have a breaker. Choose Update to replace its amps or name with the photo's, or Skip to keep the current one.</p>
-      ${cf.map((c,i)=>`<div class="row"><span style="flex:2"><b>${esc(bnum(c.ex))}</b> now: ${esc(c.ex.amps)}A ${esc(c.ex.label)}<br><span class="sm">Photo: ${esc(c.b.slot)}${esc(c.b.pole)}, ${esc(c.b.amps||'no amps')}, ${esc(c.b.funcs)}</span></span><select data-cf="${i}"><option value="skip">Skip</option><option value="update">Update</option></select></div>`).join('')}
+      ${cf.map((c,i)=>`<div class="row"><span style="flex:2"><b>${esc(bnum(c.ex))}</b> now: ${esc(c.ex.amps)}A ${esc(c.ex.label)}<br><span class="sm">Photo: ${esc(c.b.slot)}, ${esc(c.b.amps||'no amps')}, ${esc(c.b.funcs)}</span></span><select data-cf="${i}"><option value="skip">Skip</option><option value="update">Update</option></select></div>`).join('')}
       <div class="row"><button data-act="phConfirm">Apply choices</button><button data-act="phAll">Update all</button></div>`;
   }
-  else if(stage==='busy')box.innerHTML=`<h3 style="margin:0">Reading photo…</h3><p class="sm">This can take a minute the first time.</p>`;
-  else box.innerHTML=`<h3 style="margin:0">Check the recognized lines</h3>
-    <p class="sm">Each line should be: slot, amps, rooms or functions. Amps can be left blank and filled in from another photo or later. Lines starting with ?? could not be read. Fix them or delete them.</p>
-    <select id="phPanel">${S.panels.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select>
-    <textarea id="phText" rows="8">${esc(text)}</textarea>
-    <div class="row"><button data-act="phApply">Add breakers</button><button data-act="phCancel">Cancel</button></div>`;
 }
-function photoLines(text){
-  return text.split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{
-    const m=l.match(/^(\d{1,2})([ABab])?(?:[\s,.:-]+(\d{1,3})\s*A?)?(?:[\s,.:-]+|$)(.*)$/);
-    return m?`${m[1]}${(m[2]||'').toUpperCase()}, ${m[3]||''}, ${(m[4]||'').trim()}`:`?? ${l}`;
-  }).join('\n');
+function openPhoto(){
+  if(!S.panels.length){alert('Add a panel first.');return}
+  phCtx={panel:null,url:null};phStage('pick');$('phdlg').classList.add('open');
 }
-async function readPhoto(f){
-  try{if(typeof Tesseract==='undefined')await loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js')}
-  catch(err){alert('The text reader could not load. Check the internet connection, or enter the breakers manually.');phStage('warn');return}
-  phStage('busy');
-  try{const r=await Tesseract.recognize(f,'eng');phStage('review',photoLines(r.data.text))}
-  catch(err){phStage('warn');alert('The photo could not be read. Try again, or enter the breakers manually.')}
-}
-let phPending=null; // {p, conflicts:[{b,ex}], added} while the conflict step is open
+function showPhotoGuide(f){phCtx.url=URL.createObjectURL(f);phStage('guide')}
 function addPhotoBreaker(p,b){
-  if(b.pole){p.tandem=p.tandem||{};p.tandem[b.slot]=true}
-  S.breakers.push({id:uid('b'),panel:p.id,slot:b.slot,pole:b.pole,amps:b.amps,type:'Standard',status:'used',label:b.funcs,funcs:b.funcs,feedsPanel:''});
+  S.breakers.push({id:uid('b'),panel:p.id,slot:b.slot,pole:b.pole||'',amps:b.amps,type:'Standard',status:'used',label:b.funcs,funcs:b.funcs,feedsPanel:''});
 }
 function updateFromPhoto(ex,b){
   if(b.amps)ex.amps=b.amps;
@@ -509,15 +508,17 @@ function finishPhoto(added,updated){
   $('phdlg').classList.remove('open');phPending=null;
   setStat(`Added ${added}${updated?`, updated ${updated}`:''}. Import another photo to add more.`);
 }
-function applyPhoto(){
-  const p=S.panels.find(x=>x.id===$('phPanel').value);
-  if(!p){setStat('Choose a panel.');return}
-  let added=0;const conflicts=[];
-  parseBrk($('phText').value).forEach(b=>{
-    const ex=S.breakers.find(x=>x.panel===p.id&&(x.slot===b.slot||x.slot2===b.slot));
-    if(ex){conflicts.push({b,ex});return}
-    addPhotoBreaker(p,b);added++;
-  });
+function applyGuide(){
+  const p=phCtx.panel;if(!p)return;
+  const conflicts=[];let added=0;
+  for(let i=1;i<=(p.total||0);i++){
+    const label=(document.querySelector(`[data-sl="${i}"]`)?.value||'').trim();
+    const amps=(document.querySelector(`[data-am="${i}"]`)?.value||'').trim().replace(/a$/i,'');
+    if(!label&&!amps)continue;
+    const b={slot:i,pole:'',amps,funcs:label};
+    const ex=S.breakers.find(x=>x.panel===p.id&&(x.slot===i||x.slot2===i));
+    if(ex)conflicts.push({b,ex});else{addPhotoBreaker(p,b);added++}
+  }
   if(conflicts.length){phPending={p,conflicts,added};phStage('conflicts');return}
   finishPhoto(added,0);
 }
@@ -637,10 +638,10 @@ document.addEventListener('click',e=>{
     }
     bform=null;
   }
-  else if(a==='photo'){phStage('warn');$('phdlg').classList.add('open');changed=false}
-  else if(a==='phChoose'){$('phFile').click();changed=false}
+  else if(a==='photo'){openPhoto();changed=false}
+  else if(a==='phChoose'){phCtx.panel=S.panels.find(x=>x.id===$('phPanel').value)||null;if(phCtx.panel)$('phFile').click();changed=false}
   else if(a==='phCancel'){$('phdlg').classList.remove('open');changed=false}
-  else if(a==='phApply'){applyPhoto()}
+  else if(a==='phApply'){applyGuide()}
   else if(a==='phConfirm'){
     let upd=0;
     document.querySelectorAll('[data-cf]').forEach(sel=>{
@@ -737,7 +738,7 @@ document.addEventListener('click',e=>{
 });
 
 document.addEventListener('change',e=>{
-  if(e.target.id==='phFile'){const f=e.target.files[0];e.target.value='';if(f)readPhoto(f);return}
+  if(e.target.id==='phFile'){const f=e.target.files[0];e.target.value='';if(f)showPhotoGuide(f);return}
   if(e.target.dataset&&e.target.dataset.fl!==undefined){
     const i=+e.target.dataset.fl;S.floors[i]=e.target.value.trim()||S.floors[i];touch();render();return;
   }
