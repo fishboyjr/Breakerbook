@@ -641,7 +641,7 @@ function skAdd(){
 
 // Irregular rooms: corner-by-corner drawing, corner editing, and exact outline checks for overlaps.
 let drawing=null; // corners of an irregular room being drawn, or null
-function shapePts(r){if(r.pts)return r.pts.map(p=>({x:r.x+p.x,y:r.y+p.y}));const b=roomBox(r);return[{x:b.x,y:b.y},{x:b.x+b.w,y:b.y},{x:b.x+b.w,y:b.y+b.h},{x:b.x,y:b.y+b.h}]}
+function shapePts(r){if(r.pts){const q=r.pts.map(p=>({x:r.x+p.x,y:r.y+p.y}));return q.filter((p,i)=>!(i>0&&p.x===q[i-1].x&&p.y===q[i-1].y)).filter((p,i,a)=>!(i===a.length-1&&a.length>1&&p.x===a[0].x&&p.y===a[0].y))}const b=roomBox(r);return[{x:b.x,y:b.y},{x:b.x+b.w,y:b.y},{x:b.x+b.w,y:b.y+b.h},{x:b.x,y:b.y+b.h}]}
 function normalizePoly(r,abs){
   const mx=Math.min(...abs.map(p=>p.x)),my=Math.min(...abs.map(p=>p.y));
   r.x=Math.floor(mx/PX)*PX;r.y=Math.floor(my/PX)*PX;
@@ -655,11 +655,13 @@ const centerOf=P=>({x:P.reduce((s,p)=>s+p.x,0)/P.length,y:P.reduce((s,p)=>s+p.y,
 // A point lies on an outline edge (within half a pixel).
 function onEdge(p,P){for(let i=0;i<P.length;i++){const a=P[i],b=P[(i+1)%P.length],len=Math.hypot(b.x-a.x,b.y-a.y);if(!len)continue;const cr=Math.abs((b.x-a.x)*(p.y-a.y)-(b.y-a.y)*(p.x-a.x))/len;if(cr<=0.5&&p.x>=Math.min(a.x,b.x)-0.5&&p.x<=Math.max(a.x,b.x)+0.5&&p.y>=Math.min(a.y,b.y)-0.5&&p.y<=Math.max(a.y,b.y)+0.5)return true}return false}
 const strictlyInside=(p,P)=>!onEdge(p,P)&&inPoly(p,P);
+// Points just inside each edge of a shape. Unlike the average of the corners, these always fall inside the shape.
+function inwardSamples(P){let area=0;for(let i=0;i<P.length;i++){const a=P[i],b=P[(i+1)%P.length];area+=a.x*b.y-b.x*a.y}const sg=area>0?1:-1,out=[];for(let i=0;i<P.length;i++){const a=P[i],b=P[(i+1)%P.length],len=Math.hypot(b.x-a.x,b.y-a.y);if(!len)continue;const dx=b.x-a.x,dy=b.y-a.y,nx=sg*-dy/len,ny=sg*dx/len;out.push({x:(a.x+b.x)/2+nx*2,y:(a.y+b.y)/2+ny*2})}return out}
 // Points spread along every edge, so overlaps with shared (collinear) edges are still found.
 function edgeSamples(P){const out=[];for(let i=0;i<P.length;i++){const a=P[i],b=P[(i+1)%P.length];for(const t of [0.25,0.5,0.75])out.push({x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t})}return out}
 function polyOverlap(A,B){
   for(let i=0;i<A.length;i++)for(let j=0;j<B.length;j++)if(segsCross(A[i],A[(i+1)%A.length],B[j],B[(j+1)%B.length]))return true;
-  return edgeSamples(A).some(p=>strictlyInside(p,B))||edgeSamples(B).some(p=>strictlyInside(p,A))||strictlyInside(centerOf(A),B)||strictlyInside(centerOf(B),A);
+  return edgeSamples(A).some(p=>strictlyInside(p,B))||edgeSamples(B).some(p=>strictlyInside(p,A))||inwardSamples(A).some(p=>strictlyInside(p,B))||inwardSamples(B).some(p=>strictlyInside(p,A));
 }
 function polySelf(P){const n=P.length;for(let i=0;i<n;i++)for(let j=i+2;j<n;j++){if(i===0&&j===n-1)continue;if(segsCross(P[i],P[(i+1)%n],P[j],P[(j+1)%n]))return true}return false}
 function roomsClash(r,others){const A=shapePts(r),ba=roomBox(r);return others.some(o=>overlaps(ba,roomBox(o))&&(!r.pts&&!o.pts?true:polyOverlap(A,shapePts(o))))}
