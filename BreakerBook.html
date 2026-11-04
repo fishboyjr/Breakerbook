@@ -652,12 +652,17 @@ function normalizePoly(r,abs){
 function segsCross(a,b,c,d){const o=(p,q,r)=>(q.x-p.x)*(r.y-p.y)-(q.y-p.y)*(r.x-p.x);const d1=o(c,d,a),d2=o(c,d,b),d3=o(a,b,c),d4=o(a,b,d);return((d1>0&&d2<0)||(d1<0&&d2>0))&&((d3>0&&d4<0)||(d3<0&&d4>0))}
 function inPoly(p,P){let c=false;for(let i=0,j=P.length-1;i<P.length;j=i++){if((P[i].y>p.y)!==(P[j].y>p.y)&&p.x<(P[j].x-P[i].x)*(p.y-P[i].y)/(P[j].y-P[i].y)+P[i].x)c=!c}return c}
 const centerOf=P=>({x:P.reduce((s,p)=>s+p.x,0)/P.length,y:P.reduce((s,p)=>s+p.y,0)/P.length});
+// A point lies on an outline edge (within half a pixel).
+function onEdge(p,P){for(let i=0;i<P.length;i++){const a=P[i],b=P[(i+1)%P.length],len=Math.hypot(b.x-a.x,b.y-a.y);if(!len)continue;const cr=Math.abs((b.x-a.x)*(p.y-a.y)-(b.y-a.y)*(p.x-a.x))/len;if(cr<=0.5&&p.x>=Math.min(a.x,b.x)-0.5&&p.x<=Math.max(a.x,b.x)+0.5&&p.y>=Math.min(a.y,b.y)-0.5&&p.y<=Math.max(a.y,b.y)+0.5)return true}return false}
+const strictlyInside=(p,P)=>!onEdge(p,P)&&inPoly(p,P);
+// Points spread along every edge, so overlaps with shared (collinear) edges are still found.
+function edgeSamples(P){const out=[];for(let i=0;i<P.length;i++){const a=P[i],b=P[(i+1)%P.length];for(const t of [0.25,0.5,0.75])out.push({x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t})}return out}
 function polyOverlap(A,B){
   for(let i=0;i<A.length;i++)for(let j=0;j<B.length;j++)if(segsCross(A[i],A[(i+1)%A.length],B[j],B[(j+1)%B.length]))return true;
-  return inPoly(centerOf(A),B)||inPoly(centerOf(B),A);
+  return edgeSamples(A).some(p=>strictlyInside(p,B))||edgeSamples(B).some(p=>strictlyInside(p,A))||strictlyInside(centerOf(A),B)||strictlyInside(centerOf(B),A);
 }
 function polySelf(P){const n=P.length;for(let i=0;i<n;i++)for(let j=i+2;j<n;j++){if(i===0&&j===n-1)continue;if(segsCross(P[i],P[(i+1)%n],P[j],P[(j+1)%n]))return true}return false}
-function roomsClash(r,others){const A=shapePts(r),ba=roomBox(r);return others.some(o=>overlaps(ba,roomBox(o))&&polyOverlap(A,shapePts(o)))}
+function roomsClash(r,others){const A=shapePts(r),ba=roomBox(r);return others.some(o=>overlaps(ba,roomBox(o))&&(!r.pts&&!o.pts?true:polyOverlap(A,shapePts(o))))}
 function applyShape(r,abs){
   const tmp={...r};normalizePoly(tmp,abs);
   if(polySelf(abs)){setStat('The corners would cross each other.');return false}
