@@ -226,6 +226,7 @@ function drawPlan(){
       const s=sel?.kind==='room'&&sel.id===r.id,b=roomBox(r);
       h+=`<g data-kind="room" data-id="${r.id}" style="cursor:move">${r.pts?`<polygon points="${r.pts.map(p=>(r.x+p.x)+','+(r.y+p.y)).join(' ')}" style="fill:none;stroke:${s?'var(--ac)':'var(--ln)'};stroke-width:${s?3:2}"/>`:`<rect x="${r.x}" y="${r.y}" width="${b.w}" height="${b.h}" rx="4" style="fill:none;stroke:${s?'var(--ac)':'var(--ln)'};stroke-width:${s?3:2}"/>`}${(()=>{const L=`${r.name} (W ${r.w} × L ${r.h} ft)`,tw=L.length*7+14,cx=r.x+b.w/2,cy=r.y+b.h*2/3;return `<rect x="${cx-tw/2}" y="${cy-13}" width="${tw}" height="19" rx="4" style="fill:var(--pn);stroke:var(--ln)"/><text x="${cx}" y="${cy+1}" text-anchor="middle" font-size="13" style="fill:var(--fg)">${esc(L)}</text>`})()}</g>`;
     }
+    for(const r of S.rooms.filter(r=>r.floor===cur&&r.pts&&sel?.kind==='room'&&sel.id===r.id))h+=r.pts.map((p,i)=>`<circle data-kind="vertex" data-id="${r.id}" data-vi="${i}" cx="${r.x+p.x}" cy="${r.y+p.y}" r="7" style="fill:var(--ac);stroke:#fff;cursor:move"/>`).join('');
     // Dotted arcs: each device to the device it is controlled from (switch to first light, then light to light).
     for(const d of S.devices){
       const c=d.ctrl&&S.devices.find(x=>x.id===d.ctrl);
@@ -249,6 +250,7 @@ function drawPlan(){
     }
     if(!S.rooms.some(r=>r.floor===cur))h+='<text x="20" y="40" font-size="14" style="fill:var(--fg)">No rooms on this floor yet. Add one on the right.</text>';
   }
+  if(drawing)h+=drawingSVG();
   $('svg').setAttribute('viewBox',`0 0 ${VW} ${VH}`);
   $('svg').innerHTML=h;
 }
@@ -263,7 +265,7 @@ function editor(){
   const s=(k,l,opts,v)=>`<label class="sm">${l}</label><select data-f="${k}">${opts.map(([x,t])=>`<option value="${esc(x)}"${String(x)===String(v??'')?' selected':''}>${esc(t)}</option>`).join('')}</select>`;
   const c=(k,l,v)=>`<label class="sm"><input type="checkbox" data-f="${k}" ${v?'checked':''} style="width:auto"> ${l}</label>`;
   let b='';
-  if(sel.kind==='room')b=f('name','Name',o.name)+s('floor','Floor',S.floors.map((n,i)=>[i,n]),o.floor)+(o.pts?`<p class="sm">Irregular shape with ${o.pts.length} corners. Corner editing comes next.</p>`:f('w','Width (ft, top to bottom)',o.w,'number')+f('h','Length (ft, left to right)',o.h,'number'));
+  if(sel.kind==='room')b=f('name','Name',o.name)+s('floor','Floor',S.floors.map((n,i)=>[i,n]),o.floor)+(o.pts?`<p class="sm">Irregular shape with ${o.pts.length} corners. Drag a blue corner on the plan to reshape it.</p><div class="row"><button data-act="vAdd" data-id="${o.id}">Add corner</button><button data-act="vDel" data-id="${o.id}">Remove last corner</button></div>`:f('w','Width (ft, top to bottom)',o.w,'number')+f('h','Length (ft, left to right)',o.h,'number'));
   if(sel.kind==='device')b=f('name','Name',o.name)+s('type','Type',DT.map(t=>[t,t]),o.type)+s('room','Room',[['','(none)'],...S.rooms.map(r=>[r.id,r.name])],o.room)+s('breaker','Breaker',[['','(none)'],...S.breakers.map(x=>[x.id,bnum(x)+(x.label?' '+x.label:'')])],o.breaker)+s('ctrl','Controlled from (same breaker only)',[['','(none)'],...(o.breaker?S.devices.filter(x=>x.id!==o.id&&x.floor===o.floor&&x.breaker===o.breaker):[]).map(x=>[x.id,x.name+' ('+x.type+')'])],o.ctrl)+c('gfci','GFCI protected',o.gfci)+c('critical','Critical load (sump pump, fridge, freezer)',o.critical);
   if(sel.kind==='breaker')b=f('label','Name / label',o.label)+s('panel','Panel',S.panels.map(p=>[p.id,p.name]),o.panel)+f('slot','Slot',o.slot,'number')+s('pole','Pole',[['','Single'],['A','A (tandem)'],['B','B (tandem)']],o.pole)+f('amps','Amps',o.amps)+s('type','Type',BT.map(t=>[t,t]),o.type)+s('status','Status',[['used','Used'],['unused','Unused']],o.status)+s('feedsPanel','Feeds subpanel',[['','(none)'],...S.panels.filter(p=>p.id!==o.panel).map(p=>[p.id,p.name])],o.feedsPanel);
   if(sel.kind==='panel')b=f('name','Name',o.name)+f('location','Location',o.location)+s('floor','Floor',S.floors.map((n,i)=>[i,n]),o.floor)+f('total','Total slots',o.total,'number');
@@ -439,6 +441,7 @@ function renderSide(){
     <div class="row"><button data-act="addPanel">Add panel to this floor</button></div>`;
   if(mode==='rooms')body=`<h3>Rooms on ${esc(fl)}</h3>
     ${S.floors.length?list(roomsHere,r=>`<div class="it ${sel?.id===r.id?'sel':''}" data-act="sel" data-kind="room" data-id="${r.id}"><span>${esc(r.name)}</span><span class="sm">W ${r.w} × L ${r.h} ft</span></div>`):'<p class="sm">Add a floor first.</p>'}
+    ${drawing?`<div class="row"><button data-act="drawFinish">Finish room (${drawing.length} corners)</button><button data-act="drawUndo">Undo corner</button><button data-act="drawCancel">Cancel</button></div>`:`<div class="row"><button data-act="drawStart">Draw irregular room</button></div>`}
     <h3>Add room</h3>
     <div class="row"><input id="rName" placeholder="Room name"></div>
     <div class="row"><input id="rW" type="number" placeholder="Width ft"><input id="rH" type="number" placeholder="Length ft"><button data-act="addRoom">Add room</button></div>`;
@@ -629,11 +632,60 @@ function skAdd(){
       r.w=Math.max(1,Math.round(r.ph/PX));r.h=Math.max(1,Math.round(r.pw/PX));
     }
     clampRoom(r);
-    if(roomsOn(cur).some(b=>overlaps(roomBox(r),b))){skipped++;return}
+    if(roomsClash(r,S.rooms.filter(x=>x.floor===cur))){skipped++;return}
     S.rooms.push(r);added++;
   });
   $('phdlg').classList.remove('open');
   setStat(`Added ${added} room${added===1?'':'s'}${skipped?`; skipped ${skipped} that overlap existing rooms`:''}.`);
+}
+
+// Irregular rooms: corner-by-corner drawing, corner editing, and exact outline checks for overlaps.
+let drawing=null; // corners of an irregular room being drawn, or null
+function shapePts(r){if(r.pts)return r.pts.map(p=>({x:r.x+p.x,y:r.y+p.y}));const b=roomBox(r);return[{x:b.x,y:b.y},{x:b.x+b.w,y:b.y},{x:b.x+b.w,y:b.y+b.h},{x:b.x,y:b.y+b.h}]}
+function normalizePoly(r,abs){
+  const mx=Math.min(...abs.map(p=>p.x)),my=Math.min(...abs.map(p=>p.y));
+  r.x=Math.floor(mx/PX)*PX;r.y=Math.floor(my/PX)*PX;
+  r.pts=abs.map(p=>({x:Math.round(p.x-r.x),y:Math.round(p.y-r.y)}));
+  r.pw=Math.max(...r.pts.map(p=>p.x));r.ph=Math.max(...r.pts.map(p=>p.y));
+  r.w=Math.max(1,Math.round(r.ph/PX));r.h=Math.max(1,Math.round(r.pw/PX));
+}
+function segsCross(a,b,c,d){const o=(p,q,r)=>(q.x-p.x)*(r.y-p.y)-(q.y-p.y)*(r.x-p.x);const d1=o(c,d,a),d2=o(c,d,b),d3=o(a,b,c),d4=o(a,b,d);return((d1>0&&d2<0)||(d1<0&&d2>0))&&((d3>0&&d4<0)||(d3<0&&d4>0))}
+function inPoly(p,P){let c=false;for(let i=0,j=P.length-1;i<P.length;j=i++){if((P[i].y>p.y)!==(P[j].y>p.y)&&p.x<(P[j].x-P[i].x)*(p.y-P[i].y)/(P[j].y-P[i].y)+P[i].x)c=!c}return c}
+const centerOf=P=>({x:P.reduce((s,p)=>s+p.x,0)/P.length,y:P.reduce((s,p)=>s+p.y,0)/P.length});
+function polyOverlap(A,B){
+  for(let i=0;i<A.length;i++)for(let j=0;j<B.length;j++)if(segsCross(A[i],A[(i+1)%A.length],B[j],B[(j+1)%B.length]))return true;
+  return inPoly(centerOf(A),B)||inPoly(centerOf(B),A);
+}
+function polySelf(P){const n=P.length;for(let i=0;i<n;i++)for(let j=i+2;j<n;j++){if(i===0&&j===n-1)continue;if(segsCross(P[i],P[(i+1)%n],P[j],P[(j+1)%n]))return true}return false}
+function roomsClash(r,others){const A=shapePts(r),ba=roomBox(r);return others.some(o=>overlaps(ba,roomBox(o))&&polyOverlap(A,shapePts(o)))}
+function applyShape(r,abs){
+  const tmp={...r};normalizePoly(tmp,abs);
+  if(polySelf(abs)){setStat('The corners would cross each other.');return false}
+  if(roomsClash(tmp,S.rooms.filter(x=>x.floor===r.floor&&x.id!==r.id))){setStat('That shape would overlap another room.');return false}
+  Object.assign(r,tmp);return true;
+}
+function drawingSVG(){
+  if(!drawing||!drawing.length)return'';
+  return `<polyline points="${drawing.map(p=>p.x+','+p.y).join(' ')}" style="fill:none;stroke:var(--ac);stroke-width:2;stroke-dasharray:5 4"/>`+drawing.map(p=>`<circle cx="${p.x}" cy="${p.y}" r="5" style="fill:var(--ac)"/>`).join('');
+}
+function finishDraw(){
+  if(!drawing||drawing.length<3){setStat('Tap at least 3 corners.');return}
+  if(polySelf(drawing)){setStat('The corners cross each other. Undo the last corner and try again.');return}
+  const r={id:uid('r'),floor:cur,name:($('rName')?.value||'').trim()||'Room',w:1,h:1,x:0,y:0};
+  normalizePoly(r,drawing);
+  if(roomsClash(r,S.rooms.filter(x=>x.floor===cur))){setStat('That shape overlaps another room.');return}
+  S.rooms.push(r);drawing=null;setStat(`Added ${r.name}.`);
+}
+function vAdd(id){
+  const r=S.rooms.find(x=>x.id===id);if(!r)return;
+  const A=shapePts(r),n=A.length;
+  applyShape(r,[...A,{x:snap((A[n-1].x+A[0].x)/2),y:snap((A[n-1].y+A[0].y)/2)}]);
+}
+function vDel(id){
+  const r=S.rooms.find(x=>x.id===id);if(!r)return;
+  const A=shapePts(r);
+  if(A.length<=3){setStat('A room needs at least 3 corners.');return}
+  applyShape(r,A.slice(0,-1));
 }
 
 // Undo: every change to the data is recorded when the screen redraws (the saved timestamp is ignored).
@@ -752,6 +804,12 @@ document.addEventListener('click',e=>{
     }
     bform=null;
   }
+  else if(a==='drawStart'){drawing=[];setStat('Tap the corners on the plan, in order.');changed=false}
+  else if(a==='drawUndo'){if(drawing)drawing.pop();changed=false}
+  else if(a==='drawCancel'){drawing=null;changed=false}
+  else if(a==='drawFinish'){finishDraw()}
+  else if(a==='vAdd'){vAdd(id)}
+  else if(a==='vDel'){vDel(id)}
   else if(a==='sketch'){sk={mode:'pick',img:null,pts:[],k:0,cands:[]};$('phdlg').classList.add('open');skStage('pick');changed=false}
   else if(a==='skChoose'){$('skFile').click();changed=false}
   else if(a==='skDetect'){skDetect();changed=false}
@@ -913,6 +971,8 @@ document.addEventListener('change',e=>{
 const svg=$('svg');
 const pt=e=>{const p=svg.createSVGPoint();p.x=e.clientX;p.y=e.clientY;return p.matrixTransform(svg.getScreenCTM().inverse())};
 svg.addEventListener('pointerdown',e=>{
+  if(drawing){const p=pt(e);drawing.push({x:snap(p.x),y:snap(p.y)});drawPlan();return}
+  if(e.target.dataset&&e.target.dataset.kind==='vertex'){const o=find('room',e.target.dataset.id);if(o){drag={k:'vertex',o,vi:+e.target.dataset.vi};svg.setPointerCapture(e.pointerId);render();return}}
   const g=e.target.closest('[data-kind]');
   if(!g){sel=null;render();return}
   const k=g.dataset.kind,o=find(k,g.dataset.id),p=pt(e);
@@ -920,12 +980,14 @@ svg.addEventListener('pointerdown',e=>{
   svg.setPointerCapture(e.pointerId);render();
 });
 svg.addEventListener('pointermove',e=>{
-  if(!drag)return;const p=pt(e),o=drag.o;
+  if(!drag)return;
+  if(drag.k==='vertex'){const p=pt(e),A=shapePts(drag.o);A[drag.vi]={x:snap(p.x),y:snap(p.y)};applyShape(drag.o,A);drawPlan();return}
+  const p=pt(e),o=drag.o;
   if(drag.k==='room'){
     // Snap to the 1-foot grid and refuse any position that would overlap another room.
     const tmp={...o,x:snap(p.x-drag.dx),y:snap(p.y-drag.dy)};
     clampRoom(tmp);
-    if(!roomsOn(o.floor,o).some(b=>overlaps(roomBox(tmp),b))){
+    if(!roomsClash(tmp,S.rooms.filter(x=>x.floor===o.floor&&x!==o))){
       const dx=tmp.x-o.x,dy=tmp.y-o.y;o.x=tmp.x;o.y=tmp.y;
       S.devices.forEach(d=>{if(d.room===o.id&&d.x!=null){d.x+=dx;d.y+=dy}});
     }
