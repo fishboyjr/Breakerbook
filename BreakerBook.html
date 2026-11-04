@@ -36,9 +36,10 @@ h3{font-size:12px;text-transform:uppercase;letter-spacing:.05em;opacity:.65;marg
  .sheet:last-child{page-break-after:auto}
  .sheet h2{font-size:15pt;margin:0 0 2pt}
  .sheet .addr{font-size:16pt;font-weight:bold;margin:0 0 6pt}
- .qr{display:flex;gap:10pt;align-items:center;margin:0 0 8pt}
- .qr svg{width:1.1in;height:1.1in}
- .qr p{font-size:9pt;margin:0;word-break:break-all}
+ .top{display:flex;justify-content:space-between;align-items:flex-start;gap:10pt}
+ .qr{display:flex;flex-direction:column;align-items:flex-end;margin:0}
+ .qr svg{width:.55in;height:.55in}
+ .qr p{font-size:7pt;margin:2pt 0 0;text-align:right;word-break:break-all;max-width:2.2in}
  .sheet h3{font-size:11pt;opacity:1;text-transform:none;margin:8pt 0 3pt;color:#000}
  .plan{width:7.5in;height:auto;min-height:0;display:block}
  table{border-collapse:collapse;width:100%;font-size:9pt;margin:4px 0}
@@ -125,6 +126,7 @@ textarea{width:100%;font:inherit;color:inherit;background:var(--bg);border:1px s
 </div></div>
 <div id="phdlg"><div class="box" id="phbox"></div></div>
 <input type="file" id="phFile" accept="image/*" hidden>
+<input type="file" id="skFile" accept="image/*" hidden>
 <div id="print"></div>
 <script>
 const DT=['Outlet','Switch','Light','Fan','Fixture','Other'];
@@ -151,7 +153,7 @@ let dirty=false,currentName='breakerbook';
 const touch=()=>{S.updated=new Date().toLocaleString();dirty=true};
 
 // Rooms: the Width field runs top to bottom, the Length field runs left to right.
-const roomBox=r=>({x:r.x,y:r.y,w:r.h*PX,h:r.w*PX});
+const roomBox=r=>r.pts?{x:r.x,y:r.y,w:r.pw,h:r.ph}:{x:r.x,y:r.y,w:r.h*PX,h:r.w*PX};
 const overlaps=(a,b)=>a.x<b.x+b.w&&b.x<a.x+a.w&&a.y<b.y+b.h&&b.y<a.y+a.h;
 const roomsOn=(f,skip)=>S.rooms.filter(r=>r.floor===f&&r!==skip).map(roomBox);
 function freeSpot(boxes,w,h){
@@ -222,7 +224,7 @@ function drawPlan(){
   }else{
     for(const r of S.rooms.filter(r=>r.floor===cur)){
       const s=sel?.kind==='room'&&sel.id===r.id,b=roomBox(r);
-      h+=`<g data-kind="room" data-id="${r.id}" style="cursor:move"><rect x="${r.x}" y="${r.y}" width="${b.w}" height="${b.h}" rx="4" style="fill:none;stroke:${s?'var(--ac)':'var(--ln)'};stroke-width:${s?3:2}"/>${(()=>{const L=`${r.name} (W ${r.w} × L ${r.h} ft)`,tw=L.length*7+14,cx=r.x+b.w/2,cy=r.y+b.h*2/3;return `<rect x="${cx-tw/2}" y="${cy-13}" width="${tw}" height="19" rx="4" style="fill:var(--pn);stroke:var(--ln)"/><text x="${cx}" y="${cy+1}" text-anchor="middle" font-size="13" style="fill:var(--fg)">${esc(L)}</text>`})()}</g>`;
+      h+=`<g data-kind="room" data-id="${r.id}" style="cursor:move">${r.pts?`<polygon points="${r.pts.map(p=>(r.x+p.x)+','+(r.y+p.y)).join(' ')}" style="fill:none;stroke:${s?'var(--ac)':'var(--ln)'};stroke-width:${s?3:2}"/>`:`<rect x="${r.x}" y="${r.y}" width="${b.w}" height="${b.h}" rx="4" style="fill:none;stroke:${s?'var(--ac)':'var(--ln)'};stroke-width:${s?3:2}"/>`}${(()=>{const L=`${r.name} (W ${r.w} × L ${r.h} ft)`,tw=L.length*7+14,cx=r.x+b.w/2,cy=r.y+b.h*2/3;return `<rect x="${cx-tw/2}" y="${cy-13}" width="${tw}" height="19" rx="4" style="fill:var(--pn);stroke:var(--ln)"/><text x="${cx}" y="${cy+1}" text-anchor="middle" font-size="13" style="fill:var(--fg)">${esc(L)}</text>`})()}</g>`;
     }
     // Dotted arcs: each device to the device it is controlled from (switch to first light, then light to light).
     for(const d of S.devices){
@@ -261,7 +263,7 @@ function editor(){
   const s=(k,l,opts,v)=>`<label class="sm">${l}</label><select data-f="${k}">${opts.map(([x,t])=>`<option value="${esc(x)}"${String(x)===String(v??'')?' selected':''}>${esc(t)}</option>`).join('')}</select>`;
   const c=(k,l,v)=>`<label class="sm"><input type="checkbox" data-f="${k}" ${v?'checked':''} style="width:auto"> ${l}</label>`;
   let b='';
-  if(sel.kind==='room')b=f('name','Name',o.name)+s('floor','Floor',S.floors.map((n,i)=>[i,n]),o.floor)+f('w','Width (ft, top to bottom)',o.w,'number')+f('h','Length (ft, left to right)',o.h,'number');
+  if(sel.kind==='room')b=f('name','Name',o.name)+s('floor','Floor',S.floors.map((n,i)=>[i,n]),o.floor)+(o.pts?`<p class="sm">Irregular shape with ${o.pts.length} corners. Corner editing comes next.</p>`:f('w','Width (ft, top to bottom)',o.w,'number')+f('h','Length (ft, left to right)',o.h,'number'));
   if(sel.kind==='device')b=f('name','Name',o.name)+s('type','Type',DT.map(t=>[t,t]),o.type)+s('room','Room',[['','(none)'],...S.rooms.map(r=>[r.id,r.name])],o.room)+s('breaker','Breaker',[['','(none)'],...S.breakers.map(x=>[x.id,bnum(x)+(x.label?' '+x.label:'')])],o.breaker)+s('ctrl','Controlled from (same breaker only)',[['','(none)'],...(o.breaker?S.devices.filter(x=>x.id!==o.id&&x.floor===o.floor&&x.breaker===o.breaker):[]).map(x=>[x.id,x.name+' ('+x.type+')'])],o.ctrl)+c('gfci','GFCI protected',o.gfci)+c('critical','Critical load (sump pump, fridge, freezer)',o.critical);
   if(sel.kind==='breaker')b=f('label','Name / label',o.label)+s('panel','Panel',S.panels.map(p=>[p.id,p.name]),o.panel)+f('slot','Slot',o.slot,'number')+s('pole','Pole',[['','Single'],['A','A (tandem)'],['B','B (tandem)']],o.pole)+f('amps','Amps',o.amps)+s('type','Type',BT.map(t=>[t,t]),o.type)+s('status','Status',[['used','Used'],['unused','Unused']],o.status)+s('feedsPanel','Feeds subpanel',[['','(none)'],...S.panels.filter(p=>p.id!==o.panel).map(p=>[p.id,p.name])],o.feedsPanel);
   if(sel.kind==='panel')b=f('name','Name',o.name)+f('location','Location',o.location)+s('floor','Floor',S.floors.map((n,i)=>[i,n]),o.floor)+f('total','Total slots',o.total,'number');
@@ -295,9 +297,7 @@ function sheetHTML(f){
   const devRow=d=>{const b=S.breakers.find(x=>x.id===d.breaker);return `<tr><td>${esc(d.name)}</td><td>${esc(d.type)}</td><td>${esc(rn(d.room))}</td><td>${b?esc(panelName(b.panel)):'<span style="color:#c53030">NOT ASSIGNED</span>'}</td><td>${b?esc(bnum(b)):''}</td><td>${d.gfci?'Yes':''}</td><td>${d.critical?'Yes':''}</td></tr>`};
   const safe=(items,label)=>items.length?`<p><b>${label}:</b> ${items.map(d=>esc(d.name)+' ('+esc(rn(d.room))+', breaker '+esc(bn(d.breaker))+')').join('; ')}</p>`:'';
   return `<section class="sheet">
-    ${S.showAddress&&S.address?`<p class="addr">${esc(S.address)}</p>`:''}
-    ${f===0?appQR():''}
-    <h2>BreakerBook · ${esc(name)}</h2>
+    <div class="top"><div>${S.showAddress&&S.address?`<p class="addr">${esc(S.address)}</p>`:''}<h2>BreakerBook · ${esc(name)}</h2></div>${f===0?appQR():''}</div>
     <h3>Summary: breakers and rooms</h3>
     ${brks.length?`<table><tr><th>Breaker</th><th>Label</th><th>Panel</th><th>Rooms</th></tr>${brks.map(brkRow).join('')}</table>`:'<p>No breakers assigned on this floor.</p>'}
     ${panels.map(p=>`<p><b>${esc(p.name)}</b>${p.location?' ('+esc(p.location)+')':''}: available slots ${avail(p).join(', ')||'none'}; unused breakers ${S.breakers.filter(b=>b.panel===p.id&&b.status==='unused').map(bnum).join(', ')||'none'}</p>`).join('')}
@@ -430,7 +430,7 @@ function renderSide(){
     ${S.floors.map((f,i)=>{const c=floorCounts(i);return `<div class="it"><input data-fl="${i}" value="${esc(f)}" style="flex:1"><span class="sm">${c.r} rooms</span><button class="danger" data-act="floorDel" data-i="${i}">Delete</button></div>`}).join('')||'<p class="sm">No floors yet.</p>'}
     <h3>Add floor</h3>
     <div class="row"><input id="fName" placeholder="New floor name"><button data-act="addFloor">Add floor</button></div>
-    <div class="row"><button data-act="setupOpen">Run setup</button></div>
+    <div class="row"><button data-act="setupOpen">Run setup</button><button data-act="sketch">Import rooms from sketch</button></div>
     <h3>Panels on ${esc(fl)}</h3>
     ${list(S.panels.filter(p=>p.floor===cur),p=>`<div class="it ${sel?.id===p.id?'sel':''}" data-act="sel" data-kind="panel" data-id="${p.id}"><span>${esc(p.name)} <span class="sm">${esc(p.location)}</span></span><span class="sm">${avail(p).length} available</span></div>`)}
     <h3>Add panel</h3>
@@ -532,6 +532,110 @@ function applyGuide(){
   finishPhoto(added,0);
 }
 
+// Sketch import (Floors mode): finds closed room outlines in a photo of a hand-drawn plan.
+// OpenCV.js loads once, the first time this is used. Detection runs on this iPad.
+let sk={mode:'pick',img:null,pts:[],k:0,cands:[]};
+async function loadCV(){
+  if(window.cvReady)return;
+  await loadScript('https://docs.opencv.org/4.10.0/opencv.js');
+  window.cv=await Promise.resolve(window.cv);
+  window.cvReady=true;
+}
+function skStage(stage){
+  sk.mode=stage;
+  const box=$('phbox');
+  box.classList.toggle('wide',stage!=='pick');
+  if(stage==='pick')box.innerHTML=`<h3 style="margin:0">Import rooms from a sketch</h3>
+    <p class="sm">Photograph your hand-drawn plan straight down, in good light. Walls must form closed shapes. The photo stays on this iPad.</p>
+    <div class="row"><button data-act="skChoose">Choose photo</button><button data-act="phCancel">Cancel</button></div>`;
+  else if(stage==='scale')box.innerHTML=`<h3 style="margin:0">Set the scale</h3>
+    <p class="sm">Tap both ends of a wall you have measured, then type its length in feet. Points tapped: ${sk.pts.length} of 2.</p>
+    <canvas id="skc" style="width:100%;touch-action:none;border:1px solid var(--ln)"></canvas>
+    <div class="row"><input id="skFt" type="number" placeholder="Length in feet"><button data-act="skDetect">Find rooms</button><button data-act="phCancel">Cancel</button></div>`;
+  else box.innerHTML=`<h3 style="margin:0">Check the rooms found</h3>
+    <p class="sm">Uncheck any outline that isn't a room, and name the rest. Sizes come from the scale.</p>
+    <canvas id="skc" style="width:100%;border:1px solid var(--ln)"></canvas>
+    ${sk.cands.map((c,i)=>`<div class="row"><input type="checkbox" data-ck="${i}" checked style="flex:0 0 28px"><span class="sn" style="flex:0 0 28px">${i+1}</span><input data-nm="${i}" placeholder="Room name" style="flex:2"><span class="sm" style="flex:1">${c.wf} × ${c.hf} ft</span></div>`).join('')||'<p class="sm">No rooms were found. Try a clearer, straighter photo.</p>'}
+    <div class="row"><button data-act="skAdd">Add rooms</button><button data-act="phCancel">Cancel</button></div>`;
+  drawSk();
+}
+function drawSk(){
+  const c=$('skc');if(!c||!sk.img)return;
+  c.width=sk.img.width;c.height=sk.img.height;
+  const ctx=c.getContext('2d');
+  ctx.drawImage(sk.img,0,0);
+  const lw=Math.max(3,c.width/300);
+  if(sk.mode==='scale'){
+    ctx.fillStyle='#2b6cb0';ctx.strokeStyle='#2b6cb0';ctx.lineWidth=lw;
+    sk.pts.forEach(p=>{ctx.beginPath();ctx.arc(p.x,p.y,lw*3,0,Math.PI*2);ctx.fill()});
+    if(sk.pts.length===2){ctx.beginPath();ctx.moveTo(sk.pts[0].x,sk.pts[0].y);ctx.lineTo(sk.pts[1].x,sk.pts[1].y);ctx.stroke()}
+  }
+  if(sk.mode==='review'){
+    ctx.strokeStyle='#2b6cb0';ctx.fillStyle='#2b6cb0';ctx.lineWidth=lw;ctx.font=`bold ${Math.round(c.width/35)}px sans-serif`;
+    sk.cands.forEach((cd,i)=>{ctx.strokeRect(cd.x,cd.y,cd.w,cd.h);ctx.fillText(String(i+1),cd.x+lw*2,cd.y+c.width/25)});
+  }
+}
+function skTap(e){
+  if(sk.mode!=='scale')return;
+  const c=$('skc'),r=c.getBoundingClientRect();
+  if(sk.pts.length>=2)sk.pts=[];
+  sk.pts.push({x:(e.clientX-r.left)*c.width/r.width,y:(e.clientY-r.top)*c.height/r.height});
+  skStage('scale');
+}
+// Finds light areas enclosed by dark lines and keeps the ones that look like rectangles.
+function detectRooms(canvas){
+  const src=cv.imread(canvas),gray=new cv.Mat(),bin=new cv.Mat(),cnts=new cv.MatVector(),hier=new cv.Mat();
+  cv.cvtColor(src,gray,cv.COLOR_RGBA2GRAY);
+  cv.adaptiveThreshold(gray,bin,255,cv.ADAPTIVE_THRESH_GAUSSIAN_C,cv.THRESH_BINARY,31,10);
+  cv.findContours(bin,cnts,hier,cv.RETR_LIST,cv.CHAIN_APPROX_SIMPLE);
+  const W=canvas.width,H=canvas.height,out=[];
+  for(let i=0;i<cnts.size();i++){
+    const c=cnts.get(i),r=cv.boundingRect(c),box=r.width*r.height,fill=cv.contourArea(c)/(box||1);
+    if(box/(W*H)>0.01&&box/(W*H)<0.6&&r.width>20&&r.height>20){
+      const ap=new cv.Mat();cv.approxPolyDP(c,ap,0.015*cv.arcLength(c,true),true);
+      const poly=[];for(let j=0;j<ap.rows;j++)poly.push({x:ap.data32S[j*2],y:ap.data32S[j*2+1]});
+      out.push({x:r.x,y:r.y,w:r.width,h:r.height,poly});ap.delete();
+    }
+    c.delete();
+  }
+  src.delete();gray.delete();bin.delete();cnts.delete();hier.delete();
+  out.sort((a,b)=>b.w*b.h-a.w*a.h);
+  return out.filter((r,i)=>!out.slice(0,i).some(o=>r.x>=o.x&&r.y>=o.y&&r.x+r.w<=o.x+o.w&&r.y+r.h<=o.y+o.h));
+}
+async function skDetect(){
+  const ft=+$('skFt').value;
+  if(sk.pts.length<2||!ft){setStat('Tap two points on a wall and enter its length.');return}
+  const px=Math.hypot(sk.pts[0].x-sk.pts[1].x,sk.pts[0].y-sk.pts[1].y);
+  sk.k=ft/px;
+  try{
+    await loadCV();
+    const c=document.createElement('canvas');c.width=sk.img.width;c.height=sk.img.height;
+    c.getContext('2d').drawImage(sk.img,0,0);
+    sk.cands=detectRooms(c).map(r=>({...r,wf:clamp(Math.round(r.w*sk.k),1,200),hf:clamp(Math.round(r.h*sk.k),1,200)}));
+    skStage('review');
+  }catch(err){alert('The room finder could not load or read this photo. Check the internet connection and try a clearer photo.');skStage('scale')}
+}
+function skAdd(){
+  const s=sk.k*PX;let added=0,skipped=0;
+  sk.cands.forEach((c,i)=>{
+    if(!document.querySelector(`[data-ck="${i}"]`)?.checked)return;
+    const name=(document.querySelector(`[data-nm="${i}"]`)?.value||'').trim()||`Room ${i+1}`;
+    const r={id:uid('r'),floor:cur,name,w:c.wf,h:c.hf,x:Math.round((40+c.x*s)/PX)*PX,y:Math.round((40+c.y*s)/PX)*PX};
+    if(c.poly&&c.poly.length>=3){
+      const ab=c.poly.map(p=>({x:40+p.x*s,y:40+p.y*s})),mx=Math.min(...ab.map(p=>p.x)),my=Math.min(...ab.map(p=>p.y));
+      r.x=Math.floor(mx/PX)*PX;r.y=Math.floor(my/PX)*PX;
+      r.pts=ab.map(p=>({x:Math.round(p.x-r.x),y:Math.round(p.y-r.y)}));
+      r.pw=Math.max(...r.pts.map(p=>p.x));r.ph=Math.max(...r.pts.map(p=>p.y));
+      r.w=Math.max(1,Math.round(r.ph/PX));r.h=Math.max(1,Math.round(r.pw/PX));
+    }
+    clampRoom(r);
+    if(roomsOn(cur).some(b=>overlaps(roomBox(r),b))){skipped++;return}
+    S.rooms.push(r);added++;
+  });
+  $('phdlg').classList.remove('open');
+  setStat(`Added ${added} room${added===1?'':'s'}${skipped?`; skipped ${skipped} that overlap existing rooms`:''}.`);
+}
+
 // Undo: every change to the data is recorded when the screen redraws (the saved timestamp is ignored).
 let undoStack=[],lastSnap=null;
 const snapKey=()=>{const {updated,...rest}=S;return JSON.stringify(rest)};
@@ -545,6 +649,7 @@ function render(){
   if(cur>=S.floors.length)cur=0;document.body.classList.toggle('bmode',mode==='brk');growCanvas();drawPlan();renderTabs();renderSide();renderBrk();maybeSetup()}
 
 document.addEventListener('click',e=>{
+  if(e.target.id==='skc'){skTap(e);return}
   const t=e.target.closest('[data-act]');if(!t)return;
   const a=t.dataset.act,id=t.dataset.id,k=t.dataset.kind;
   let changed=true;
@@ -647,6 +752,10 @@ document.addEventListener('click',e=>{
     }
     bform=null;
   }
+  else if(a==='sketch'){sk={mode:'pick',img:null,pts:[],k:0,cands:[]};$('phdlg').classList.add('open');skStage('pick');changed=false}
+  else if(a==='skChoose'){$('skFile').click();changed=false}
+  else if(a==='skDetect'){skDetect();changed=false}
+  else if(a==='skAdd'){skAdd()}
   else if(a==='photo'){openPhoto();changed=false}
   else if(a==='phChoose'){phCtx.panel=S.panels.find(x=>x.id===$('phPanel').value)||null;if(phCtx.panel)$('phFile').click();changed=false}
   else if(a==='phCancel'){$('phdlg').classList.remove('open');changed=false}
@@ -747,6 +856,11 @@ document.addEventListener('click',e=>{
 });
 
 document.addEventListener('change',e=>{
+  if(e.target.id==='skFile'){
+    const f=e.target.files[0];e.target.value='';
+    if(f){const img=new Image();img.onload=()=>{sk.img=img;sk.pts=[];skStage('scale')};img.src=URL.createObjectURL(f)}
+    return;
+  }
   if(e.target.id==='phFile'){const f=e.target.files[0];e.target.value='';if(f)showPhotoGuide(f);return}
   if(e.target.dataset&&e.target.dataset.fl!==undefined){
     const i=+e.target.dataset.fl;S.floors[i]=e.target.value.trim()||S.floors[i];touch();render();return;
