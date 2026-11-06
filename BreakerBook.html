@@ -224,9 +224,9 @@ function drawPlan(){
   }else{
     for(const r of S.rooms.filter(r=>r.floor===cur)){
       const s=sel?.kind==='room'&&sel.id===r.id,b=roomBox(r);
-      h+=`<g data-kind="room" data-id="${r.id}" style="cursor:move">${r.pts?`<polygon points="${r.pts.map(p=>(r.x+p.x)+','+(r.y+p.y)).join(' ')}" style="fill:none;stroke:${s?'var(--ac)':'var(--ln)'};stroke-width:${s?3:2}"/>`:`<rect x="${r.x}" y="${r.y}" width="${b.w}" height="${b.h}" rx="4" style="fill:none;stroke:${s?'var(--ac)':'var(--ln)'};stroke-width:${s?3:2}"/>`}${(()=>{const L=`${r.name} (W ${r.w} × L ${r.h} ft)`,tw=L.length*7+14,cx=r.x+b.w/2,cy=r.y+b.h*2/3;return `<rect x="${cx-tw/2}" y="${cy-13}" width="${tw}" height="19" rx="4" style="fill:var(--pn);stroke:var(--ln)"/><text x="${cx}" y="${cy+1}" text-anchor="middle" font-size="13" style="fill:var(--fg)">${esc(L)}</text>`})()}</g>`;
+      h+=`<g data-kind="room" data-id="${r.id}" style="cursor:move">${r.pts?`<polygon points="${r.pts.map(p=>(r.x+p.x)+','+(r.y+p.y)).join(' ')}" style="fill:none;stroke:${s?'var(--ac)':'var(--ln)'};stroke-width:${s?3:2}"/>`:`<rect x="${r.x}" y="${r.y}" width="${b.w}" height="${b.h}" rx="4" style="fill:none;stroke:${s?'var(--ac)':'var(--ln)'};stroke-width:${s?3:2}"/>`}${(()=>{let L=r.name;const mc=Math.max(1,Math.floor((b.w-14)/7));if(L.length>mc)L=L.slice(0,Math.max(1,mc-1))+'…';const tw=L.length*7+14,cx=r.x+b.w/2,cy=r.y+b.h*2/3;return `<rect x="${cx-tw/2}" y="${cy-13}" width="${tw}" height="19" rx="4" style="fill:var(--pn);stroke:var(--ln)"/><text x="${cx}" y="${cy+1}" text-anchor="middle" font-size="13" style="fill:var(--fg)">${esc(L)}</text>`})()}</g>`;
     }
-    for(const r of S.rooms.filter(r=>r.floor===cur&&r.pts&&sel?.kind==='room'&&sel.id===r.id))h+=r.pts.map((p,i)=>`<circle data-kind="vertex" data-id="${r.id}" data-vi="${i}" cx="${r.x+p.x}" cy="${r.y+p.y}" r="7" style="fill:var(--ac);stroke:#fff;cursor:move"/>`).join('');
+    for(const r of S.rooms.filter(r=>r.floor===cur&&r.pts&&sel?.kind==='room'&&sel.id===r.id))h+=r.pts.map((p,i)=>`<circle data-kind="vertex" data-id="${r.id}" data-vi="${i}" cx="${r.x+p.x}" cy="${r.y+p.y}" r="22" style="fill:transparent;cursor:move"/><circle data-kind="vertex" data-id="${r.id}" data-vi="${i}" cx="${r.x+p.x}" cy="${r.y+p.y}" r="9" style="fill:var(--ac);stroke:#fff;pointer-events:none"/>`).join('');
     // Dotted arcs: each device to the device it is controlled from (switch to first light, then light to light).
     for(const d of S.devices){
       const c=d.ctrl&&S.devices.find(x=>x.id===d.ctrl);
@@ -350,7 +350,7 @@ function wizHTML(){
     ${W.wantRooms==='1'?S.floors.map((f,i)=>`<label class="sm">${esc(f)}: separate rooms with commas. Add a size as "Kitchen 12x14" (width x length, ft). Rooms without a size are 10 x 10 ft.</label><textarea id="rt${i}" rows="2">${esc(W.rooms[i]||'')}</textarea>`).join(''):''}
     ${nav('Next','wizRooms')}`;
   if(W.step==='panels')return `<h3 style="margin:0">Panels</h3>
-    <label class="sm">One panel per line: name, location, total slots. Example: Main panel, Basement, 40</label>
+    <label class="sm">One panel per line: name, location, total slots, floor. Example: Main panel, Basement, 40, Basement</label>
     <textarea id="wPanels" rows="3">${esc(W.panelText)}</textarea>
     ${nav('Next','wizPanels')}`;
   return `<h3 style="margin:0">Breakers</h3>
@@ -358,13 +358,14 @@ function wizHTML(){
     ${nav('Finish','wizFinish')}`;
 }
 function parseRooms(t){return t.split(',').map(x=>x.trim()).filter(Boolean).map(x=>{const m=x.match(/^(.*?)\s+(\d+(?:\.\d+)?)\s*[x×]\s*(\d+(?:\.\d+)?)$/i);return m?{name:m[1].trim(),w:clamp(+m[2],1,200),h:clamp(+m[3],1,200)}:{name:x,w:10,h:10}})}
-function parsePanels(t){return t.split('\n').map(l=>l.split(',').map(x=>x.trim())).filter(a=>a[0]).map(a=>({name:a[0],location:a[1]||'',total:+a[2]||0}))}
+function parsePanels(t){return t.split('\n').map(l=>l.split(',').map(x=>x.trim())).filter(a=>a[0]).map(a=>({name:a[0],location:a[1]||'',total:+a[2]||0,floor:a[3]||''}))}
 function parseBrk(t){return t.split('\n').map(l=>l.split(',').map(x=>x.trim())).filter(a=>a[0]).map(a=>{const m=a[0].match(/^(\d+)\s*([ABab])?$/);return m?{slot:+m[1],pole:(m[2]||'').toUpperCase(),amps:(a[1]||'').replace(/a$/i,''),funcs:a.slice(2).join(', ')}:null}).filter(Boolean)}
 function finishWiz(){
   if(W.wantRooms==='1')W.rooms.forEach((txt,i)=>parseRooms(txt).forEach(r=>addRoom(r.name,r.w,r.h,i)));
   W.panels.forEach((p,i)=>{
-    const cnt=S.panels.filter(q=>q.floor===0).length;
-    const pn={id:uid('p'),name:p.name,location:p.location,total:p.total,floor:0,x:VW-PW-20,y:20+cnt*(PH+12)};
+    const fi=Math.max(0,S.floors.findIndex(x=>x.toLowerCase()===(p.floor||'').toLowerCase()));
+    const cnt=S.panels.filter(q=>q.floor===fi).length;
+    const pn={id:uid('p'),name:p.name,location:p.location,total:p.total,floor:fi,x:VW-PW-20,y:20+cnt*(PH+12)};
     clampPanel(pn);S.panels.push(pn);
     parseBrk($('wb'+i)?.value||'').forEach(b=>{
       if(b.pole){pn.tandem=pn.tandem||{};pn.tandem[b.slot]=true}
@@ -424,7 +425,7 @@ function renderSide(){
   const roomsHere=S.rooms.filter(r=>r.floor===cur);
   const devsHere=S.devices.filter(d=>d.floor===cur);
   const needs=S.devices.filter(d=>!d.breaker||!d.room);
-  const roomOpts=[['','(none)'],...S.rooms.map(r=>[r.id,r.name+' ('+(S.floors[r.floor]||'')+')'])];
+  const roomOpts=[['','(none)'],...S.rooms.filter(r=>r.floor===cur).map(r=>[r.id,r.name])];
   const brkOpts=[['','(none)'],...S.breakers.map(b=>[b.id,bnum(b)+' '+panelName(b.panel)])];
   const info=`<p class="sm">${esc(fl)||'No floor selected'}${fl?`: ${roomsHere.length} room${roomsHere.length===1?'':'s'}, ${devsHere.length} item${devsHere.length===1?'':'s'}, ${S.panels.filter(p=>p.floor===cur).length} panel(s)`:''}</p>`;
   let body='';
