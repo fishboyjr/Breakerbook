@@ -1,38 +1,65 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>BreakerBook v51</title>
+<title>BreakerBook v52</title>
 
 <style>
-:root{color-scheme:light dark;--bg:#f5f5f3;--fg:#1d1d1f;--pn:#fff;--ln:#cfcfca;--ac:#2b6cb0}
-@media(prefers-color-scheme:dark){:root{--bg:#1c1c1e;--fg:#f2f2f2;--pn:#2a2a2d;--ln:#48484c}}
+:root{color-scheme:light dark;--bg:#f0f3f7;--pn:#fff;--bgi:#f4f6f9;--fg:#1b2733;--mut:#64748b;--ln:#dfe5ec;--ac:#0b7fc0;--act:#fff;--ac2:#e3f1fb;--wall:#8795a5;--rf:rgba(11,127,192,.05);--rfs:rgba(11,127,192,.13);--sh:0 1px 2px rgba(16,24,40,.05),0 2px 10px rgba(16,24,40,.05);--r:14px}
+@media(prefers-color-scheme:dark){:root{--bg:#0e1216;--pn:#182028;--bgi:#1f2933;--fg:#e8edf3;--mut:#94a3b4;--ln:#2b3540;--ac:#4db8f2;--act:#04202e;--ac2:#14313f;--wall:#6c7e90;--rf:rgba(77,184,242,.06);--rfs:rgba(77,184,242,.17);--sh:0 1px 2px rgba(0,0,0,.45)}}
 *{box-sizing:border-box}
 html,body{overscroll-behavior:none}
-body{margin:0;font:14px system-ui,sans-serif;background:var(--bg);color:var(--fg);height:100vh;display:grid;grid-template-rows:auto 1fr}
-header{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px;background:var(--pn);border-bottom:1px solid var(--ln)}
-header b{margin-right:auto}
-main{display:grid;grid-template-columns:1fr 340px;min-height:0}
-#plan{display:flex;flex-direction:column;min-height:0}
-#tabs{display:flex;flex-wrap:wrap;gap:4px;padding:6px;border-bottom:1px solid var(--ln);align-items:center}
-svg{flex:1;width:100%;min-height:300px;background:var(--pn);touch-action:none}
-aside{overflow:auto;padding:10px;border-left:1px solid var(--ln);background:var(--pn);min-height:0}
-input,select,button{font:inherit;color:inherit;background:var(--bg);border:1px solid var(--ln);border-radius:6px;padding:5px 7px;margin:2px 0;max-width:100%}
+body{margin:0;font:14px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--fg);height:100vh;display:grid;grid-template-rows:auto 1fr;-webkit-font-smoothing:antialiased}
+header{display:flex;flex-wrap:wrap;gap:8px 6px;align-items:center;padding:10px 14px;padding-top:calc(10px + env(safe-area-inset-top,0px));background:var(--pn);border-bottom:1px solid var(--ln)}
+.brand{display:flex;align-items:center;gap:10px;margin-right:auto}
+.logo{width:34px;height:34px;border-radius:10px;background:var(--ac);display:grid;place-items:center;color:var(--act)}
+.brand b{font-size:17px;font-weight:650;letter-spacing:-.01em;margin:0}
+.ver{font-size:11px;font-weight:600;color:var(--mut);background:var(--bgi);border:1px solid var(--ln);border-radius:999px;padding:1px 8px}
+.acts{display:flex;gap:4px;flex-wrap:wrap}
+.acts button{background:transparent;border-color:transparent;color:var(--fg);font-weight:500}
+.acts button:hover{background:var(--bgi)}
+.acts button[data-act="save"]{background:var(--ac);color:var(--act)}
+#stat{position:fixed;left:50%;bottom:22px;transform:translate(-50%,12px);max-width:min(92vw,520px);background:#26323d;color:#fff;padding:10px 16px;border-radius:999px;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.25);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:20;opacity:0}
+#stat.show{opacity:1;transform:translate(-50%,0)}
+main{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:12px;padding:12px;min-height:0}
+#plan{display:flex;flex-direction:column;min-height:0;background:var(--pn);border:1px solid var(--ln);border-radius:var(--r);box-shadow:var(--sh);overflow:hidden}
+#tabs{display:flex;gap:0;padding:0 8px;border-bottom:1px solid var(--ln);align-items:center;overflow-x:auto}
+#tabs button{border:0;border-bottom:2px solid transparent;border-radius:0;background:transparent;color:var(--mut);padding:0 14px;min-height:46px;margin:0;font-weight:500;white-space:nowrap}
+#tabs button.on{color:var(--ac);border-bottom-color:var(--ac);outline:0}
+#tabs button[data-act="fit"]{margin-left:auto;border-bottom:0;color:var(--ac);min-height:36px;border-radius:9px}
+#svg{flex:1;width:100%;min-height:300px;background:var(--pn);touch-action:none}
+.plan{background:var(--pn)}
+aside{overflow:auto;padding:0 2px 12px 0;display:flex;flex-direction:column;gap:12px;min-height:0;background:transparent;border:0}
+.card{flex:none;background:var(--pn);border:1px solid var(--ln);border-radius:var(--r);box-shadow:var(--sh);padding:14px}
+.card h3{margin:0 0 8px}
+.ctx{padding:0 4px;color:var(--mut)}
+.ctx p{margin:0}
+.seg{flex:none;display:flex;gap:2px;background:var(--bgi);border:1px solid var(--ln);border-radius:14px;padding:3px}
+.seg button{flex:1;border:0;background:transparent;border-radius:11px;margin:0;padding:7px 2px 6px;color:var(--mut);font-size:12px;font-weight:550;display:flex;flex-direction:column;align-items:center;gap:2px}
+.seg button.on{background:var(--pn);color:var(--ac);box-shadow:var(--sh);outline:0}
+input,select,button{font:inherit;color:inherit;background:var(--bgi);border:1px solid var(--ln);border-radius:10px;padding:7px 10px;margin:2px 0;max-width:100%;min-height:38px}
+input[type=checkbox]{min-height:0;accent-color:var(--ac)}
 input,select{width:100%}
-button{cursor:pointer}
-button.on{outline:2px solid var(--ac)}
-h3{font-size:12px;text-transform:uppercase;letter-spacing:.05em;opacity:.65;margin:14px 0 4px}
-.row{display:flex;gap:5px;flex-wrap:wrap}.row>*{flex:1}.row>button{flex:0 0 auto}
-.it{display:flex;justify-content:space-between;gap:6px;align-items:center;padding:4px;border-radius:6px;cursor:pointer}
-.it:hover,.it.sel{background:var(--bg)}
-.sm{font-size:12px;opacity:.7}
-.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:middle}
-.danger{color:#c53030}
-@media(max-width:760px){main{grid-template-columns:1fr;grid-template-rows:55vh auto}aside{border-left:0;border-top:1px solid var(--ln)}body{height:auto}}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--ac);outline-offset:-1px;background:var(--pn)}
+button{cursor:pointer;background:var(--pn);font-weight:550}
+button:hover{background:var(--bgi)}
+button.on{background:var(--ac2);color:var(--ac);border-color:transparent;outline:0}
+button[data-act^="add"],button[data-act="bfSave"],button[data-act="setupGo"],button[data-act="wizRooms"],button[data-act="wizPanels"],button[data-act="wizFinish"],button[data-act="print"],button[data-act="skAdd"],button[data-act="skDetect"],button[data-act="phApply"],button[data-act="phConfirm"],button[data-act="skChoose"],button[data-act="phChoose"],button[data-act="drawFinish"],button[data-act="bpAdd"],button[data-act="phAll"]{background:var(--ac);color:var(--act);border-color:transparent}
+button[data-act^="add"]:hover,button[data-act="bfSave"]:hover,button[data-act="skAdd"]:hover,button[data-act="bpAdd"]:hover,button[data-act="print"]:hover{filter:brightness(1.08);background:var(--ac)}
+h3{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);margin:14px 0 4px}
+.row{display:flex;gap:6px;flex-wrap:wrap}.row>*{flex:1}.row>button{flex:0 0 auto}
+.it{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:8px 10px;border-radius:10px;cursor:pointer}
+.it:hover{background:var(--bgi)}
+.it.sel{background:var(--ac2)}
+.sm{font-size:12px;color:var(--mut)}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:middle}
+.danger{color:#c5221f;border-color:#efc4c1}
+@media(prefers-color-scheme:dark){.danger{color:#ff8a80;border-color:#5a3532}}
+@media(max-width:760px){main{grid-template-columns:1fr;grid-template-rows:55vh auto}aside{padding:0}body{height:auto}}
 #print{display:none}
 @media print{
  body>*:not(#print){display:none!important}
  #print{display:block}
  @page{size:letter;margin:.5in}
- :root{--fg:#000;--pn:#fff;--bg:#fff;--ln:#999}
+ :root{--fg:#000;--pn:#fff;--bg:#fff;--ln:#999;--wall:#555;--rf:#f7f7f7;--rfs:#f7f7f7}
  .sheet{page-break-after:always;font:10pt system-ui,sans-serif;color:#000}
  .sheet:last-child{page-break-after:auto}
  .sheet h2{font-size:15pt;margin:0 0 2pt}
@@ -41,65 +68,67 @@ h3{font-size:12px;text-transform:uppercase;letter-spacing:.05em;opacity:.65;marg
  .qr{display:flex;flex-direction:column;align-items:flex-end;margin:0}
  .qr svg{width:.55in;height:.55in}
  .qr p{font-size:7pt;margin:2pt 0 0;text-align:right;word-break:break-all;max-width:2.2in}
- .sheet h3{font-size:11pt;opacity:1;text-transform:none;margin:8pt 0 3pt;color:#000}
+ .sheet h3{font-size:11pt;opacity:1;text-transform:none;margin:8pt 0 3pt;color:#000;letter-spacing:0}
  .planwrap{break-inside:avoid;page-break-inside:avoid}
  .plan{width:7.5in;height:6.6in;min-height:0;display:block;break-inside:avoid;page-break-inside:avoid}
  table{border-collapse:collapse;width:100%;font-size:9pt;margin:4px 0}
  td,th{border:1px solid #999;padding:2px 4px;text-align:left;vertical-align:top}
  .disc{font-size:8.5pt;margin-top:10px;border-top:1px solid #999;padding-top:4px}
 }
-#pdlg{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;z-index:5}
-#pdlg.open{display:flex}
-#pdlg .box{background:var(--pn);padding:16px;border-radius:8px;width:min(92vw,380px);display:grid;gap:6px;border:1px solid var(--ln)}
-@media print{#pdlg{display:none!important}}
-header{padding-top:calc(10px + env(safe-area-inset-top,0px))}
-#bview{display:none;overflow:auto;padding:12px;flex:1;min-height:0}
+#pdlg,#sdlg,#ndlg,#cdlg,#phdlg{position:fixed;inset:0;background:rgba(10,16,22,.5);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center}
+#pdlg{z-index:5}#sdlg{z-index:6}#ndlg{z-index:7}#cdlg{z-index:8}#phdlg{z-index:9}
+#pdlg.open,#sdlg.open,#ndlg.open,#cdlg.open,#phdlg.open{display:flex}
+#pdlg .box,#sdlg .box,#ndlg .box,#cdlg .box,#phdlg .box{background:var(--pn);padding:20px;border-radius:18px;border:1px solid var(--ln);box-shadow:0 24px 60px rgba(0,0,0,.28);display:grid;gap:8px}
+#pdlg .box{width:min(92vw,380px)}#sdlg .box{width:min(92vw,400px)}#ndlg .box{width:min(92vw,360px)}#cdlg .box{width:min(92vw,380px);gap:12px}
+#phdlg .box{width:min(92vw,460px);max-height:90vh;overflow:auto}
+.box>h3:first-child{font-size:17px;font-weight:650;text-transform:none;letter-spacing:0;color:var(--fg);margin:0}
+#cdlg h3{text-transform:none;font-size:15px;color:var(--fg)}
+@media print{#pdlg,#sdlg,#ndlg,#cdlg,#phdlg{display:none!important}}
+#bview{display:none;overflow:auto;padding:16px;flex:1;min-height:0}
 body.bmode #bview{display:block}
-body.bmode svg,body.bmode #tabs{display:none}
-.pnl{background:var(--bg);border:1px solid var(--ln);border-radius:8px;padding:8px;margin:0 0 12px;display:inline-block;vertical-align:top;min-width:300px;max-width:100%}
-.slot{display:flex;align-items:center;gap:8px;margin:4px 0}
-.sn{width:24px;text-align:right;font-size:12px;opacity:.7}
+body.bmode #svg,body.bmode #tabs{display:none}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 12px}
+.chip{border-radius:999px;padding:6px 16px;min-height:36px;background:var(--bgi)}
+.chip.on{background:var(--ac);color:var(--act);border-color:transparent}
+.pnl{display:block;width:100%;max-width:720px;min-width:0;background:var(--pn);border:1px solid var(--ln);border-radius:var(--r);box-shadow:var(--sh);padding:14px;margin:0 0 12px}
+.ph{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.ph b{font-size:17px}
+details.addp{max-width:720px;background:var(--pn);border:1px solid var(--ln);border-radius:var(--r);padding:10px 14px;margin:0 0 12px}
+details.addp summary{cursor:pointer;font-weight:550;color:var(--ac);min-height:28px}
+details.addp .row{margin-top:8px}
+.slot{display:flex;align-items:center;gap:8px;margin:5px 0}
+.sn{width:24px;text-align:right;font-size:12px;color:var(--mut)}
 .hl{flex:1;display:flex;gap:4px}
-.h{flex:1;min-height:44px;border:2px solid var(--fg);border-radius:6px;padding:4px 8px;background:var(--pn);cursor:pointer;font-size:12px}
+.h{flex:1;min-height:46px;border:1px solid var(--ln);border-left:4px solid var(--hc,var(--fg));border-radius:10px;padding:5px 10px;background:var(--pn);cursor:pointer;font-size:12px}
+.h:hover{background:var(--bgi)}
 .h b{display:block;font-size:14px}
-.h.empty{border:2px dashed var(--ln);opacity:.6}
-.h.off{opacity:.5}
+.h.empty{border:1px dashed var(--ln);background:transparent;color:var(--mut);display:flex;align-items:center}
+.h.off{opacity:.55}
 .pr{display:grid;grid-template-columns:2fr 1fr 2fr;gap:4px;margin:4px 0}
-.bfwrap{position:sticky;top:0;z-index:3;background:var(--bg);padding-bottom:6px}
-.bf{background:var(--pn);border:1px solid var(--ac);border-radius:8px;padding:10px;margin-bottom:12px;max-width:480px;display:grid;gap:6px}
-#sdlg{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;z-index:6}
-#sdlg.open{display:flex}
-#sdlg .box{background:var(--pn);padding:16px;border-radius:8px;width:min(92vw,400px);display:grid;gap:6px;border:1px solid var(--ln)}
-@media print{#sdlg{display:none!important}}
-textarea{width:100%;font:inherit;color:inherit;background:var(--bg);border:1px solid var(--ln);border-radius:6px;padding:5px 7px;margin:2px 0;min-height:56px}
-.pnl{display:block;width:100%;max-width:680px;min-width:0}
+.bfwrap{position:sticky;top:0;z-index:3;background:var(--pn);padding-bottom:6px}
+.bf{background:var(--pn);border:1px solid var(--ac);border-radius:var(--r);padding:12px;margin-bottom:12px;max-width:480px;display:grid;gap:6px;box-shadow:var(--sh)}
+textarea{width:100%;font:inherit;color:inherit;background:var(--bgi);border:1px solid var(--ln);border-radius:10px;padding:7px 10px;margin:2px 0;min-height:56px}
 .cols{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .stk{flex:1;display:flex;flex-direction:column;gap:4px}
-.tg{font-size:11px;padding:3px 5px;white-space:nowrap}
-#ndlg{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;z-index:7}
-#ndlg.open{display:flex}
-#ndlg .box{background:var(--pn);padding:16px;border-radius:8px;width:min(92vw,360px);display:grid;gap:8px;border:1px solid var(--ln)}
-@media print{#ndlg{display:none!important}}
-#cdlg{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;z-index:8}
-#cdlg.open{display:flex}
-#cdlg .box{background:var(--pn);padding:16px;border-radius:8px;width:min(92vw,380px);display:grid;gap:10px;border:1px solid var(--ln)}
-#cdlg h3{text-transform:none;font-size:15px;opacity:1}
-@media print{#cdlg{display:none!important}}
-.edit{border:2px solid var(--ac);border-radius:8px;padding:8px;margin:8px 0;background:var(--bg)}
-#phdlg{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;z-index:9}
-#phdlg.open{display:flex}
-#phdlg .box{background:var(--pn);padding:16px;border-radius:8px;width:min(92vw,460px);display:grid;gap:8px;border:1px solid var(--ln);max-height:90vh;overflow:auto}
-@media print{#phdlg{display:none!important}}
-#phdlg .box.wide{width:min(96vw,980px)}
+.tg{font-size:11px;padding:3px 8px;min-height:28px;white-space:nowrap;border-radius:8px}
+.edit{border-left:4px solid var(--ac)}
 .pg{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
-.pgl{max-height:62vh;overflow:auto;border:1px solid var(--ln);border-radius:6px}
+.pgl{max-height:62vh;overflow:auto;border:1px solid var(--ln);border-radius:10px}
 .pgl img{width:100%;height:auto;display:block}
 .pgr{max-height:62vh;overflow:auto;padding-right:4px}
+#phdlg .box.wide{width:min(96vw,980px)}
 @media(max-width:640px){.pg{grid-template-columns:1fr}.pgl{max-height:40vh}.pgr{max-height:none}}
+.skrow{display:flex;gap:8px;align-items:flex-start;padding:8px 0;border-top:1px solid var(--ln)}
+.skrow>input[type=checkbox]{flex:0 0 22px;width:22px;margin-top:10px}
+.skrow>.sn{flex:0 0 22px;margin-top:10px}
+.skmain{flex:1;min-width:0}
+.skhint{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:4px}
+.skhint img{height:34px;max-width:140px;border:1px solid var(--ln);border-radius:6px;background:#fff}
+.skhint button{min-height:30px;padding:3px 10px;border-radius:999px;font-size:12px}
 </style></head><body>
-<header><b>BreakerBook <span class="sm">v51</span></b>
-<button data-act="open">Open file</button><button data-act="save">Save file</button><button data-act="printOpts">Print</button><button data-act="undo">Undo</button><button data-act="new">New</button>
-<input type="file" id="fIn" accept=".json,application/json" hidden><span class="sm" id="stat"></span></header>
+<header><div class="brand"><span class="logo"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M13.2 2 4.5 13.4h5.6L9 22l9.5-12h-5.8L13.2 2Z"/></svg></span><b>BreakerBook</b><span class="ver">v52</span></div>
+<div class="acts"><button data-act="open">Open file</button><button data-act="printOpts">Print</button><button data-act="undo">Undo</button><button data-act="new">New</button><button data-act="save">Save file</button></div>
+<input type="file" id="fIn" accept=".json,application/json" hidden><span id="stat"></span></header>
 <main><div id="plan"><div id="tabs"></div><svg id="svg" viewBox="0 0 960 640"></svg><div id="bview"></div></div><aside id="side"></aside></main><div id="pdlg"><div class="box">
   <h3 style="margin:0">Print sheets</h3>
   <input id="pAddr" placeholder="Street address (optional)">
@@ -131,6 +160,7 @@ textarea{width:100%;font:inherit;color:inherit;background:var(--bg);border:1px s
 <div id="phdlg"><div class="box" id="phbox"></div></div>
 <input type="file" id="phFile" accept="image/*" hidden>
 <input type="file" id="skFile" accept="image/*" hidden>
+<datalist id="roomNames"></datalist>
 <div id="print"></div>
 <script>
 const DT=['Outlet','Switch','Light','Fan','Fixture','Other'];
@@ -141,7 +171,7 @@ const PX=14;          // one 1-foot grid square = 14 px on the plan
 let VW=960,VH=640; // starting plan size (960 px = about 68.5 ft at 14 px per ft)  // plan size in px
 const PW=100,PH=44;   // panel object size in px (small box)
 const blank=()=>({version:3,updated:'',address:'',showAddress:true,mainShutoff:'',evCharger:'',setupDone:false,floors:[],panels:[],rooms:[],breakers:[],devices:[]});
-let S=blank(),cur=0,sel=null,drag=null;
+let S=blank(),cur=0,sel=null,drag=null,noGrid=false,curPanel=null;
 const $=id=>document.getElementById(id);
 const uid=p=>p+Math.random().toString(36).slice(2,8);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -154,7 +184,8 @@ const pnum=p=>'P'+(p.num||(S.panels.indexOf(p)+1));
 const nextPanelNum=()=>Math.max(0,...S.panels.map(p=>p.num||0))+1;
 const panelName=id=>{const p=S.panels.find(x=>x.id===id);return p?pnum(p)+' '+p.name:''};
 const avail=p=>Array.from({length:p.total||0},(_,i)=>i+1).filter(n=>!S.breakers.some(b=>b.panel===p.id&&(b.slot===n||b.slot2===n)));
-const setStat=t=>{$('stat').textContent=t};
+let _statT=null;
+const setStat=t=>{const el=$('stat');el.textContent=t;el.classList.toggle('show',!!t);clearTimeout(_statT);if(t)_statT=setTimeout(()=>el.classList.remove('show'),4500)};
 let dirty=false,currentName='breakerbook';
 const touch=()=>{S.updated=new Date().toLocaleString();dirty=true};
 
@@ -192,6 +223,8 @@ function addRoom(name,w,h,floor){
   const b=roomBox(r),s=spotFor(roomsOn(floor),b.w,b.h);
   r.x=s.x;r.y=s.y;S.rooms.push(r);return r;
 }
+// A floor named Garage that has no rooms gets one room called Garage.
+function ensureGarageRoom(i){if(/^garage/i.test(S.floors[i]||'')&&!S.rooms.some(r=>r.floor===i))addRoom('Garage',20,22,i)}
 function placeDev(d){
   const r=S.rooms.find(x=>x.id===d.room);
   if(!r){d.x=null;d.y=null;return}
@@ -232,7 +265,7 @@ function drawPlan(){
   }else{
     for(const r of S.rooms.filter(r=>r.floor===cur)){
       const s=sel?.kind==='room'&&sel.id===r.id,b=roomBox(r);
-      h+=`<g data-kind="room" data-id="${r.id}" style="cursor:move">${r.pts?`<polygon points="${r.pts.map(p=>(r.x+p.x)+','+(r.y+p.y)).join(' ')}" style="fill:none;stroke:${s?'var(--ac)':'var(--ln)'};stroke-width:${s?3:2}"/>`:`<rect x="${r.x}" y="${r.y}" width="${b.w}" height="${b.h}" rx="4" style="fill:none;stroke:${s?'var(--ac)':'var(--ln)'};stroke-width:${s?3:2}"/>`}${(()=>{let L=r.name;const mc=Math.max(1,Math.floor((b.w-14)/7));if(L.length>mc)L=L.slice(0,Math.max(1,mc-1))+'…';const tw=L.length*7+14,cx=r.x+b.w/2,cy=r.y+b.h*2/3;return `<rect x="${cx-tw/2}" y="${cy-13}" width="${tw}" height="19" rx="4" style="fill:var(--pn);stroke:var(--ln)"/><text x="${cx}" y="${cy+1}" text-anchor="middle" font-size="13" style="fill:var(--fg)">${esc(L)}</text>`})()}</g>`;
+      h+=`<g data-kind="room" data-id="${r.id}" style="cursor:move">${r.pts?`<polygon points="${r.pts.map(p=>(r.x+p.x)+','+(r.y+p.y)).join(' ')}" style="fill:${s?'var(--rfs)':'var(--rf)'};stroke:${s?'var(--ac)':'var(--wall)'};stroke-width:${s?3:2};stroke-linejoin:round"/>`:`<rect x="${r.x}" y="${r.y}" width="${b.w}" height="${b.h}" rx="4" style="fill:${s?'var(--rfs)':'var(--rf)'};stroke:${s?'var(--ac)':'var(--wall)'};stroke-width:${s?3:2};stroke-linejoin:round"/>`}${(()=>{let L=r.name;const mc=Math.max(1,Math.floor((b.w-14)/7));if(L.length>mc)L=L.slice(0,Math.max(1,mc-1))+'…';const tw=L.length*7+14,cx=r.x+b.w/2,cy=r.y+b.h*2/3;return `<rect x="${cx-tw/2}" y="${cy-13}" width="${tw}" height="19" rx="4" style="fill:var(--pn);stroke:var(--ln)"/><text x="${cx}" y="${cy+1}" text-anchor="middle" font-size="13" style="fill:var(--fg)">${esc(L)}</text>`})()}</g>`;
     }
     for(const r of S.rooms.filter(r=>r.floor===cur&&r.pts&&sel?.kind==='room'&&sel.id===r.id))h+=r.pts.map((p,i)=>`<circle data-kind="vertex" data-id="${r.id}" data-vi="${i}" cx="${r.x+p.x}" cy="${r.y+p.y}" r="22" style="fill:transparent;cursor:move"/><circle data-kind="vertex" data-id="${r.id}" data-vi="${i}" cx="${r.x+p.x}" cy="${r.y+p.y}" r="9" style="fill:var(--ac);stroke:#fff;pointer-events:none"/>`).join('');
     // Dotted arcs: each device to the device it is controlled from (switch to first light, then light to light).
@@ -256,6 +289,7 @@ function drawPlan(){
     if(!S.rooms.some(r=>r.floor===cur))h+='<text x="20" y="40" font-size="14" style="fill:var(--fg)">No rooms on this floor yet. Add one on the right.</text>';
   }
   if(drawing)h+=drawingSVG();
+  if(!noGrid)h=`<defs><pattern id="gd" width="${PX}" height="${PX}" patternUnits="userSpaceOnUse"><circle cx="${PX/2}" cy="${PX/2}" r=".9" style="fill:var(--ln)"/></pattern></defs><rect x="0" y="0" width="${VW}" height="${VH}" fill="url(#gd)" style="pointer-events:none"/>`+h;
   $('svg').setAttribute('viewBox',`0 0 ${VW} ${VH}`);
   $('svg').innerHTML=h;
 }
@@ -276,7 +310,7 @@ function editor(){
   if(sel.kind==='panel')b=f('name','Name',o.name)+s('floor','Floor',S.floors.map((n,i)=>[i,n]),o.floor)+s('room','Room',[['','(none)'],...S.rooms.filter(q=>q.floor===o.floor).map(q=>[q.id,q.name])],o.room)+f('total','Total slots',o.total,'number');
   return b+`<div class="row" style="margin-top:8px"><button class="danger" data-act="del">Delete ${sel.kind}</button></div>`;
 }
-function floorMarkup(f){const keep=cur,ks=sel;cur=f;sel=null;drawPlan();const m=$('svg').innerHTML;cur=keep;sel=ks;drawPlan();return m}
+function floorMarkup(f){const keep=cur,ks=sel;cur=f;sel=null;noGrid=true;drawPlan();const m=$('svg').innerHTML;noGrid=false;cur=keep;sel=ks;drawPlan();return m}
 // Crop the drawing to the floor's content so symbols and text print at a readable size.
 function floorBox(f){
   let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
@@ -374,6 +408,7 @@ function parseBrk(t){return t.split('\n').map(l=>l.split(',').map(x=>x.trim())).
 function finishWiz(){
   if(!S.floors.length)W.panels=[];
   if(W.wantRooms==='1')W.rooms.forEach((txt,i)=>parseRooms(txt).forEach(r=>addRoom(r.name,r.w,r.h,i)));
+  S.floors.forEach((f,i)=>ensureGarageRoom(i));
   W.panels.forEach((p,i)=>{
     const fi=Math.max(0,S.floors.findIndex(x=>x.toLowerCase()===(p.floor||'').toLowerCase()));
     const cnt=S.panels.filter(q=>q.floor===fi).length;
@@ -389,28 +424,34 @@ function finishWiz(){
 }
 function renderBrk(){
   const half=(b,pole,p,n)=>b
-    ?`<div class="h ${b.status==='unused'?'off':''}" data-act="bedit" data-id="${b.id}"><b style="color:${colorOf(b.id)}">${esc(bnum(b))}</b>${esc(b.amps)}A ${esc(b.label)}${b.type!=='Standard'?' · '+esc(b.type):''}${b.status==='unused'?' · UNUSED':''}</div>`
+    ?`<div class="h ${b.status==='unused'?'off':''}" data-act="bedit" data-id="${b.id}" style="--hc:${colorOf(b.id)}"><b style="color:${colorOf(b.id)}">${esc(bnum(b))}</b>${esc(b.amps)}A ${esc(b.label)}${b.type!=='Standard'?' · '+esc(b.type):''}${b.status==='unused'?' · UNUSED':''}</div>`
     :`<div class="h empty" data-act="bnew" data-panel="${p.id}" data-slot="${n}" data-pole="${pole}">Open${pole?' '+pole:''}</div>`;
   const slot=(p,n)=>{
     const bs=S.breakers.filter(b=>b.panel===p.id&&(b.slot===n||b.slot2===n));
     const comb=bs.find(b=>b.slot2===n);
     if(comb&&comb.slot!==n)return `<div class="slot"><span class="sn">${n}</span><div class="h off">Part of ${esc(bnum(comb))}</div></div>`;
-    if(comb)return `<div class="slot"><span class="sn">${n}</span><div class="h" data-act="bedit" data-id="${comb.id}"><b style="color:${colorOf(comb.id)}">${esc(bnum(comb))}</b>${esc(comb.amps)}A ${esc(comb.label)}</div><button class="tg" data-act="split" data-id="${comb.id}">Split</button></div>`;
+    if(comb)return `<div class="slot"><span class="sn">${n}</span><div class="h" data-act="bedit" data-id="${comb.id}" style="--hc:${colorOf(comb.id)}"><b style="color:${colorOf(comb.id)}">${esc(bnum(comb))}</b>${esc(comb.amps)}A ${esc(comb.label)}</div><button class="tg" data-act="split" data-id="${comb.id}">Split</button></div>`;
     const tan=!!(p.tandem&&p.tandem[n]);
     const handle=tan
       ?`<div class="stk">${half(bs.find(b=>b.pole==='A'),'A',p,n)}${half(bs.find(b=>b.pole==='B'),'B',p,n)}</div>`
       :half(bs.find(b=>!b.pole),'',p,n);
     return `<div class="slot"><span class="sn">${n}</span>${handle}<button class="tg" data-act="tandem" data-panel="${p.id}" data-slot="${n}">${tan?'Make single':'Make tandem'}</button>${!tan&&n+2<=(p.total||0)&&!S.breakers.some(b=>b.panel===p.id&&(b.slot===n+2||b.slot2===n+2))?`<button class="tg" data-act="combine" data-panel="${p.id}" data-slot="${n}">Combine ↓</button>`:''}</div>`;
   };
-  const cols=S.panels.map(p=>{
+  if(!S.panels.some(p=>p.id===curPanel))curPanel=S.panels[0]?S.panels[0].id:null;
+  const cp=S.panels.find(p=>p.id===curPanel);
+  const chips=S.panels.length>1?`<div class="chips">${S.panels.map(p=>`<button class="chip ${p.id===curPanel?'on':''}" data-act="pickPanel" data-id="${p.id}">${pnum(p)} ${esc(p.name)}</button>`).join('')}</div>`:'';
+  let cols='';
+  if(cp){
     let odd='',even='';
-    for(let n=1;n<=(p.total||0);n++){if(n%2)odd+=slot(p,n);else even+=slot(p,n)}
-    return `<div class="pnl"><b>${pnum(p)} ${esc(p.name)}</b><div class="cols"><div>${odd}</div><div>${even}</div></div></div>`;
-  }).join('');
+    for(let n=1;n<=(cp.total||0);n++){if(n%2)odd+=slot(cp,n);else even+=slot(cp,n)}
+    const used=S.breakers.filter(b=>b.panel===cp.id).length,open=avail(cp).length;
+    const loc=[S.floors[cp.floor],(S.rooms.find(q=>q.id===cp.room)||{}).name].filter(Boolean).join(' · ');
+    cols=`<div class="pnl"><div class="ph"><b>${pnum(cp)} ${esc(cp.name)}</b><span class="sm">${esc(loc)}${loc?' · ':''}${used} breaker${used===1?'':'s'}, ${open} slot${open===1?'':'s'} open</span></div><div class="cols"><div>${odd}</div><div>${even}</div></div></div>`;
+  }
   $('bview').innerHTML=`
     ${bform?`<div class="bfwrap"><div class="bf">${bformHTML()}</div></div>`:''}
-    <div class="row" style="margin-bottom:10px"><input id="bpName" placeholder="Panel name (e.g. Main)"><input id="bpTot" type="number" placeholder="Slots"><button data-act="bpAdd">Add panel</button><button data-act="photo">Import from photo</button></div>
-    ${cols||'<p class="sm">Add a panel to start entering breakers.</p>'}`;
+    ${chips}${cols||'<p class="sm">Add a panel to start entering breakers.</p>'}
+    <details class="addp"${S.panels.length?'':' open'}><summary>Add a panel or import from a photo</summary><div class="row"><input id="bpName" placeholder="Panel name (e.g. Main)"><input id="bpTot" type="number" placeholder="Slots"><button data-act="bpAdd">Add panel</button><button data-act="photo">Import from photo</button></div></details>`;
 }
 // When a room grows into neighbors, push them in the direction of growth ('x' right, 'y' down).
 function snapshotLayout(){return{r:S.rooms.map(r=>[r,r.x,r.y]),d:S.devices.map(d=>[d,d.x,d.y])}}
@@ -429,11 +470,13 @@ function pushHits(o,dir,root){
 }
 // Sidebar modes: Floors, Rooms, or Devices. Each shows what you need for that kind of work.
 let mode='floors';
+const ICONS={floors:'<path d="M12 3 3 8l9 5 9-5-9-5ZM4 12.5l8 4.5 8-4.5M4 16.5l8 4.5 8-4.5"/>',rooms:'<path d="M4 20V5h11v15M15 9h5v11M3 20h18M10.5 12.5v.01"/>',devices:'<path d="M9 3v4M15 3v4M7 7h10v5a5 5 0 0 1-10 0V7ZM12 17v4"/>',brk:'<path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z"/>'};
+const ico=n=>`<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICONS[n]}</svg>`;
 function floorCounts(i){return{r:S.rooms.filter(r=>r.floor===i).length,d:S.devices.filter(d=>d.floor===i).length,p:S.panels.filter(p=>p.floor===i).length}}
 function panelRoomOpts(fl){return `<option value="">No room yet</option>${S.rooms.filter(q=>q.floor===fl).map(q=>`<option value="${q.id}">${esc(q.name)}</option>`).join('')}`}
 function renderSide(){
   const list=(arr,fn)=>arr.map(fn).join('')||'<p class="sm">None yet.</p>';
-  const m=(k,l)=>`<button class="${mode===k?'on':''}" data-act="mode" data-m="${k}">${l}</button>`;
+  const m=(k,l)=>`<button class="${mode===k?'on':''}" data-act="mode" data-m="${k}">${ico(k)}<span>${l}</span></button>`;
   const fl=S.floors[cur]||'';
   const roomsHere=S.rooms.filter(r=>r.floor===cur);
   const devsHere=S.devices.filter(d=>d.floor===cur);
@@ -443,7 +486,7 @@ function renderSide(){
   const info=`<p class="sm">${esc(fl)||'No floor selected'}${fl?`: ${roomsHere.length} room${roomsHere.length===1?'':'s'}, ${devsHere.length} item${devsHere.length===1?'':'s'}, ${S.panels.filter(p=>p.floor===cur).length} panel(s)`:''}</p>`;
   let body='';
   if(mode==='floors')body=`<h3>Floors</h3>
-    ${S.floors.map((f,i)=>{const c=floorCounts(i);return `<div class="it"><input data-fl="${i}" value="${esc(f)}" style="flex:1"><span class="sm">${c.r} rooms</span><button class="danger" data-act="floorDel" data-i="${i}">Delete</button></div>`}).join('')||'<p class="sm">No floors yet.</p>'}
+    ${S.floors.map((f,i)=>{const c=floorCounts(i);return `<div class="it"><input data-fl="${i}" value="${esc(f)}" style="flex:1"><span class="sm">${c.r} room${c.r===1?'':'s'}</span><button class="danger" data-act="floorDel" data-i="${i}">Delete</button></div>`}).join('')||'<p class="sm">No floors yet.</p>'}
     <h3>Add floor</h3>
     <div class="row"><input id="fName" placeholder="New floor name"><button data-act="addFloor">Add floor</button></div>
     <div class="row"><button data-act="setupOpen">Run setup</button></div>
@@ -478,8 +521,9 @@ function renderSide(){
     <h3>Panels without a room</h3>
     ${list(S.panels.filter(p=>!p.room),p=>`<div class="it ${sel?.id===p.id?'sel':''}" data-act="sel" data-kind="panel" data-id="${p.id}"><span>${pnum(p)} ${esc(p.name)}</span><span class="sm">${esc(S.floors[p.floor]||'')}</span></div>`)}
     <p class="sm">Add breakers in the Breakers tab.</p>`;
-  $('side').innerHTML=`<div class="row" style="margin-bottom:6px">${m('floors','Floors')}${m('rooms','Rooms')}${m('devices','Devices')}${m('brk','Panels')}</div>
-    ${info}<div class="edit"><h3 style="margin:0 0 4px">${sel?'Edit '+sel.kind:'Edit'}</h3>${editor()}</div>${body}`;
+  const cards=body.split('<h3>').filter(x=>x.trim()).map(x=>`<section class="card"><h3>${x}</section>`).join('');
+  $('side').innerHTML=`<div class="seg">${m('floors','Floors')}${m('rooms','Rooms')}${m('devices','Devices')}${m('brk','Panels')}</div>
+    <div class="ctx">${info}</div><div class="edit card"><h3>${sel?'Edit '+sel.kind:'Edit'}</h3>${editor()}</div>${cards}`;
 }
 
 // Yes/Cancel confirmation; the action runs only if the user taps Yes.
@@ -565,11 +609,14 @@ function skStage(stage){
     <canvas id="skc" style="width:100%;touch-action:none;border:1px solid var(--ln)"></canvas>
     <p id="skMsg" class="sm"></p>
     <div class="row"><input id="skFt" type="number" placeholder="Length in feet"><button data-act="skDetect">Find rooms</button><button data-act="phCancel">Cancel</button></div>`;
-  else box.innerHTML=`<h3 style="margin:0">Check the rooms found</h3>
-    <p class="sm">Uncheck any outline that isn't a room, and name the rest. Sizes come from the scale.</p>
-    <canvas id="skc" style="width:100%;border:1px solid var(--ln)"></canvas>
-    ${sk.cands.map((c,i)=>`<div class="row"><input type="checkbox" data-ck="${i}" checked style="flex:0 0 28px"><span class="sn" style="flex:0 0 28px">${i+1}</span><input data-nm="${i}" placeholder="Room name" style="flex:2"><span class="sm" style="flex:1">${c.wf} × ${c.hf} ft</span></div>`).join('')||'<p class="sm">No rooms were found. Try a clearer, straighter photo.</p>'}
+  else{
+    const nRead=sk.cands.filter(c=>c.read).length;
+    box.innerHTML=`<h3 style="margin:0">Check the rooms found</h3>
+    <p class="sm">Uncheck any outline that isn't a room. ${nRead?'Names were read from your handwriting and can be wrong: check each one, or tap a suggestion. Your corrections teach the reader.':'Name the rest.'} Sizes come from the scale.</p>
+    <canvas id="skc" style="width:100%;border:1px solid var(--ln);border-radius:10px"></canvas>
+    ${sk.cands.map((c,i)=>`<div class="skrow"><input type="checkbox" data-ck="${i}" checked><span class="sn">${i+1}</span><div class="skmain"><div class="row"><input data-nm="${i}" list="roomNames" placeholder="Room name" value="${esc(c.pre||'')}" style="flex:2"><span class="sm" style="flex:1;white-space:nowrap">${c.wf} × ${c.hf} ft</span></div>${c.read?`<div class="skhint">${c.read.crop?`<img src="${c.read.crop}" alt="Handwriting from the photo">`:''}${c.read.chips.map(n=>`<button class="tg" data-act="skPick" data-i="${i}" data-v="${esc(n)}">${esc(n)}</button>`).join('')}</div>`:''}</div></div>`).join('')||'<p class="sm">No rooms were found. Try a clearer, straighter photo.</p>'}
     <div class="row"><button data-act="skAdd">Add rooms</button><button data-act="phCancel">Cancel</button></div>`;
+  }
   drawSk();
 }
 function drawSk(){
@@ -621,7 +668,7 @@ function findRoomsInGray(gray,W,H,sc){
     if(edge)continue;
     const bw=maxX-minX+1,bh=maxY-minY+1;
     if(bw<6||bh<6)continue;
-    let poly=null;
+    let poly=null,squaredFrom=null;
     if(area/(bw*bh)<0.95){
       let inC=new Uint8Array(total);for(const p of pix)inC[p]=1;inC=closeRoomMask(inC,W,H,minX,minY,maxX,maxY,8);
       let start=pix[0];for(const p of pix)if(p<start)start=p;
@@ -630,9 +677,9 @@ function findRoomsInGray(gray,W,H,sc){
       if(!poly)continue;
       // Nearly convex outlines (a stray mark or text touching a wall) are squared off to their bounding box.
       const hx=poly.map(p=>p.x),hy=poly.map(p=>p.y),x0=Math.min(...hx),x1=Math.max(...hx),y0=Math.min(...hy),y1=Math.max(...hy);
-      if(polyConvexGap(poly)/((x1-x0)*(y1-y0)||1)<=0.1){minX=x0;maxX=x1;minY=y0;maxY=y1;poly=null}
+      if(polyArea(poly)/((x1-x0)*(y1-y0)||1)>=0.85){squaredFrom=poly;minX=x0;maxX=x1;minY=y0;maxY=y1;poly=null}
     }
-    out.push({x:minX*sc,y:minY*sc,w:(maxX-minX+1)*sc,h:(maxY-minY+1)*sc,area,poly:poly?poly.map(p=>({x:p.x*sc,y:p.y*sc})):null});
+    out.push({x:minX*sc,y:minY*sc,w:(maxX-minX+1)*sc,h:(maxY-minY+1)*sc,area,poly:poly?poly.map(p=>({x:p.x*sc,y:p.y*sc})):null,poly0:squaredFrom?squaredFrom.map(p=>({x:p.x*sc,y:p.y*sc})):null});
   }
   out.sort((a,b)=>b.w*b.h-a.w*a.h);
   return out.filter((r,i)=>!out.slice(0,i).some(o=>r.x>=o.x&&r.y>=o.y&&r.x+r.w<=o.x+o.w&&r.y+r.h<=o.y+o.h));
@@ -686,6 +733,8 @@ function prepareGray(g,W,H,closeR){
   }
   return out;
 }
+// Fraction of room o's own shape (outline or box) that lies inside the box of room r.
+function shapeFractionIn(o,r){let n=0,k=0;const N=16;for(let i=0;i<N;i++)for(let j=0;j<N;j++){const x=o.x+(i+.5)*o.w/N,y=o.y+(j+.5)*o.h/N;if(o.poly&&!inPoly({x,y},o.poly))continue;n++;if(x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h)k++}return n?k/n:0}
 function bboxOverlapRatio(c,o){const ix=Math.max(0,Math.min(c.x+c.w,o.x+o.w)-Math.max(c.x,o.x));const iy=Math.max(0,Math.min(c.y+c.h,o.y+o.h)-Math.max(c.y,o.y));return (ix*iy)/((c.w*c.h)||1)}
 // Rooms from the narrow closing are kept as they are. Rooms from the wider closing are added only where they don't overlap a room already found.
 function findRoomsMerged(g,W,H,sc){
@@ -693,6 +742,8 @@ function findRoomsMerged(g,W,H,sc){
   const b=findRoomsInGray(prepareGray(g,W,H,1),W,H,sc);
   const acc=a.slice();
   for(const c of b){if(!acc.some(o=>bboxOverlapRatio(c,o)>0.15))acc.push(c)}
+  // A room that was squared off must not swallow a neighbor: if it would, it keeps its real outline.
+  acc.forEach(r=>{if(r.poly0&&acc.some(o=>o!==r&&shapeFractionIn(o,r)>0.08))r.poly=r.poly0});
   snapRectEdges(acc,12*sc);
   return acc.sort((p,q)=>q.w*q.h-p.w*p.h);
 }
@@ -760,6 +811,314 @@ function alignPolys(polys,tol,PX){
   return out;
 }
 
+// ---- Room name reader ----
+// ---- Room name reader (no downloads): reads handwritten block capitals by matching letters against your own handwriting. ----
+// Letter shapes: [width, stroke, stroke, ...]; each stroke is a list of [x,y] points in a 0..1 box (width scaled by the first number).
+const GL={
+A:[.70,[[0,1],[.5,0],[1,1]],[[.2,.68],[.8,.68]]],
+B:[.55,[[0,0],[0,1]],[[0,0],[.7,0],[1,.12],[1,.4],[.7,.5],[0,.5]],[[.7,.5],[1,.62],[1,.88],[.7,1],[0,1]]],
+C:[.60,[[1,.15],[.7,0],[.3,0],[0,.2],[0,.8],[.3,1],[.7,1],[1,.85]]],
+D:[.60,[[0,0],[0,1]],[[0,0],[.6,0],[1,.25],[1,.75],[.6,1],[0,1]]],
+E:[.50,[[1,0],[0,0],[0,1],[1,1]],[[0,.5],[.8,.5]]],
+F:[.50,[[1,0],[0,0],[0,1]],[[0,.5],[.8,.5]]],
+G:[.65,[[1,.2],[.7,0],[.3,0],[0,.2],[0,.8],[.3,1],[.7,1],[1,.8],[1,.55],[.55,.55]]],
+H:[.62,[[0,0],[0,1]],[[1,0],[1,1]],[[0,.5],[1,.5]]],
+I:[.20,[[.5,0],[.5,1]]],
+J:[.45,[[1,0],[1,.75],[.7,1],[.3,1],[0,.8]]],
+K:[.60,[[0,0],[0,1]],[[1,0],[0,.6]],[[.25,.45],[1,1]]],
+L:[.50,[[0,0],[0,1],[1,1]]],
+M:[.80,[[0,1],[0,0],[.5,.65],[1,0],[1,1]]],
+N:[.65,[[0,1],[0,0],[1,1],[1,0]]],
+O:[.65,[[.5,0],[.15,.1],[0,.35],[0,.65],[.15,.9],[.5,1],[.85,.9],[1,.65],[1,.35],[.85,.1],[.5,0]]],
+P:[.55,[[0,1],[0,0],[.7,0],[1,.15],[1,.4],[.7,.55],[0,.55]]],
+Q:[.65,[[.5,0],[.15,.1],[0,.35],[0,.65],[.15,.9],[.5,1],[.85,.9],[1,.65],[1,.35],[.85,.1],[.5,0]],[[.6,.7],[1,1.05]]],
+R:[.58,[[0,1],[0,0],[.7,0],[1,.15],[1,.4],[.7,.55],[0,.55]],[[.4,.55],[1,1]]],
+S:[.55,[[1,.15],[.7,0],[.3,0],[0,.15],[0,.4],[.3,.5],[.7,.55],[1,.65],[1,.85],[.7,1],[.3,1],[0,.85]]],
+T:[.60,[[0,0],[1,0]],[[.5,0],[.5,1]]],
+U:[.62,[[0,0],[0,.75],[.25,1],[.75,1],[1,.75],[1,0]]],
+V:[.65,[[0,0],[.5,1],[1,0]]],
+W:[.90,[[0,0],[.25,1],[.5,.4],[.75,1],[1,0]]],
+X:[.62,[[0,0],[1,1]],[[1,0],[0,1]]],
+Y:[.62,[[0,0],[.5,.5],[1,0]],[[.5,.5],[.5,1]]],
+Z:[.58,[[0,0],[1,0],[0,1],[1,1]]]
+};
+const ROOM_WORDS0=['KITCHEN','BATH','BATHROOM','BEDROOM','BED','OFFICE','LIVING','ROOM','HALL','HALLWAY','DINING','LAUNDRY','GARAGE','UTILITY','STORAGE','FINISHED','FRONT','CLOSET','BASEMENT','FAMILY','MASTER','GUEST','STUDY','DEN','PANTRY','MUD','ENTRY','FOYER','PORCH','DECK','ATTIC','SHOP','WORKSHOP','MECHANICAL','FURNACE','SUNROOM','GREAT','PLAY','GAME','MEDIA','LIBRARY','LOFT','STAIRS','MAIN','HALF','POWDER','TOILET','WC','NOOK','COMMON','REAR','BACK','UNFINISHED','CRAWL','SPACE','COLD','WINE','CELLAR','GYM','SHED','BARN','LAB','SUITE','KIDS','NURSERY','SEWING','CRAFT','MUSIC','THEATER','BAR'];
+const ROOM_PHRASES=['LIVING ROOM','FRONT ROOM','FAMILY ROOM','MASTER BEDROOM','MASTER BATH','GAME ROOM','PLAY ROOM','GREAT ROOM','MUD ROOM','HALF BATH','LAUNDRY ROOM','DINING ROOM','POWDER ROOM','WINE CELLAR','CRAWL SPACE','COLD ROOM'];
+const ROOM_WORDS=ROOM_WORDS0.concat(ROOM_PHRASES);
+// Draws a word in the stroke font, height h pixels. Returns {w,h,a}: a is ink coverage 0..1.
+function renderWord(str,h){
+  const gap=.2,space=.45,sw=Math.max(1.5,h*.14);
+  let wUnits=0;const items=[];
+  for(const ch of str){if(ch===' '){wUnits+=space;continue}const g=GL[ch];if(!g)continue;items.push({g,x:wUnits});wUnits+=g[0]+gap}
+  wUnits=Math.max(.1,wUnits-gap);
+  const pad=Math.ceil(sw),W=Math.ceil(wUnits*h)+2*pad,H=h+2*pad+Math.ceil(h*.08),a=new Float32Array(W*H);
+  const stamp=(cx,cy)=>{const r=sw/2;for(let y=Math.floor(cy-r);y<=Math.ceil(cy+r);y++)for(let x=Math.floor(cx-r);x<=Math.ceil(cx+r);x++){if(x<0||y<0||x>=W||y>=H)continue;if((x-cx)*(x-cx)+(y-cy)*(y-cy)<=r*r)a[y*W+x]=1}};
+  for(const it of items){const gw=it.g[0];for(let s=1;s<it.g.length;s++){const P=it.g[s];for(let i=0;i<P.length-1;i++){const x0=pad+(it.x+P[i][0]*gw)*h,y0=pad+P[i][1]*h,x1=pad+(it.x+P[i+1][0]*gw)*h,y1=pad+P[i+1][1]*h,n=Math.ceil(Math.hypot(x1-x0,y1-y0)*2)+1;for(let k=0;k<=n;k++)stamp(x0+(x1-x0)*k/n,y0+(y1-y0)*k/n)}}}
+  return {w:W,h:H,a};
+}
+// Tight bounding box of the ink in a coverage array.
+function inkBox(a,W,H,t=.3){let x0=W,y0=H,x1=-1,y1=-1;for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(a[y*W+x]>t){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y}return x1<0?null:{x:x0,y:y0,w:x1-x0+1,h:y1-y0+1}}
+// Area-averages the box (bx,by,bw,bh) of a coverage array onto a gw x gh grid, then blurs a little.
+function toGrid(a,W,H,bx,by,bw,bh,gw,gh){
+  const g=new Float32Array(gw*gh);
+  for(let j=0;j<gh;j++)for(let i=0;i<gw;i++){
+    const x0=bx+i*bw/gw,x1=bx+(i+1)*bw/gw,y0=by+j*bh/gh,y1=by+(j+1)*bh/gh;let s=0,n=0;
+    for(let y=Math.floor(y0);y<Math.ceil(y1);y++)for(let x=Math.floor(x0);x<Math.ceil(x1);x++){if(x<0||y<0||x>=W||y>=H)continue;const wx=Math.min(x+1,x1)-Math.max(x,x0),wy=Math.min(y+1,y1)-Math.max(y,y0);if(wx<=0||wy<=0)continue;s+=a[y*W+x]*wx*wy;n+=wx*wy}
+    g[j*gw+i]=n?s/n:0;
+  }
+  return blur(blur(g,gw,gh),gw,gh);
+}
+function blur(g,w,h){const o=new Float32Array(w*h),t=new Float32Array(w*h);for(let y=0;y<h;y++)for(let x=0;x<w;x++){const l=g[y*w+Math.max(0,x-1)],c=g[y*w+x],r=g[y*w+Math.min(w-1,x+1)];t[y*w+x]=(l+2*c+r)/4}for(let y=0;y<h;y++)for(let x=0;x<w;x++){const u=t[Math.max(0,y-1)*w+x],c=t[y*w+x],d=t[Math.min(h-1,y+1)*w+x];o[y*w+x]=(u+2*c+d)/4}return o}
+
+// Finds the handwriting inside each room: dark marks that are not part of the long walls, grouped into lines.
+function localDarkMask(g,W,H,R,off){
+  const integ=new Float64Array((W+1)*(H+1));
+  for(let y=0;y<H;y++){let row=0;for(let x=0;x<W;x++){row+=g[y*W+x];integ[(y+1)*(W+1)+x+1]=integ[y*(W+1)+x+1]+row}}
+  const m=new Uint8Array(W*H);
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+    const x0=Math.max(0,x-R),x1=Math.min(W-1,x+R),y0=Math.max(0,y-R),y1=Math.min(H-1,y+R);
+    const S=integ[(y1+1)*(W+1)+x1+1]-integ[y0*(W+1)+x1+1]-integ[(y1+1)*(W+1)+x0]+integ[y0*(W+1)+x0];
+    m[y*W+x]=g[y*W+x]<S/((x1-x0+1)*(y1-y0+1))-off?1:0;
+  }
+  return m;
+}
+// Removes straight runs longer than minRun (walls), keeping handwriting, whose strokes are shorter.
+function stripLongRuns(m,W,H,minRun){
+  const out=m.slice();
+  for(let y=0;y<H;y++){let x=0;while(x<W){if(!m[y*W+x]){x++;continue}let e=x;while(e<W&&m[y*W+e])e++;if(e-x>=minRun)for(let k=x;k<e;k++)out[y*W+k]=0;x=e}}
+  for(let x=0;x<W;x++){let y=0;while(y<H){if(!m[y*W+x]){y++;continue}let e=y;while(e<H&&m[e*W+x])e++;if(e-y>=minRun)for(let k=y;k<e;k++)out[k*W+x]=0;y=e}}
+  return out;
+}
+function markComponents(m,W,H){
+  const lab=new Int32Array(W*H),comps=[],stack=new Int32Array(W*H);
+  for(let i=0;i<W*H;i++){
+    if(!m[i]||lab[i])continue;
+    const id=comps.length+1;let sp=0;stack[sp++]=i;lab[i]=id;const pix=[];let x0=W,y0=H,x1=0,y1=0;
+    while(sp){const p=stack[--sp];pix.push(p);const x=p%W,y=(p-x)/W;if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;
+      for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const xx=x+dx,yy=y+dy;if(xx<0||yy<0||xx>=W||yy>=H)continue;const q=yy*W+xx;if(m[q]&&!lab[q]){lab[q]=id;stack[sp++]=q}}}
+    comps.push({pix,x0,y0,x1,y1,w:x1-x0+1,h:y1-y0+1});
+  }
+  return comps;
+}
+// Splits the dark marks into the wall network (big connected pieces) and loose marks. Writing that touches a wall is
+// recovered by cutting the long straight runs out of the big pieces and keeping only compact leftovers.
+function handwritingComponents(dark,W,H){
+  const all=markComponents(dark,W,H);
+  const big=all.filter(c=>Math.max(c.w,c.h)>=90||c.pix.length>1800);
+  const loose=all.filter(c=>!(Math.max(c.w,c.h)>=90||c.pix.length>1800));
+  let out=loose.slice();
+  const lh=loose.filter(c=>c.h>=10&&c.h<=60).map(c=>c.h).sort((p,q)=>p-q),minRun=Math.max(30,Math.round(1.35*(lh[Math.floor(lh.length*0.75)]||28)));
+  if(big.length){
+    const m=new Uint8Array(W*H);big.forEach(c=>c.pix.forEach(p=>{m[p]=1}));
+    const cut=stripLongRuns(m,W,H,minRun);
+    for(const c of markComponents(cut,W,H)){
+      const ar=Math.max(c.w,c.h)/Math.max(1,Math.min(c.w,c.h));
+      if(c.pix.length>=8&&c.h>=8&&c.h<=60&&c.w<=60&&ar<=4)out.push(c);
+    }
+  }
+  return out;
+}
+// room: {x,y,w,h,poly?} in working-pixel units. Returns lines: [{x,y,w,h,mask(W*H crop)}], top to bottom.
+function textLinesInRoom(comps0,W,H,room){
+  const inside=(x,y)=>{
+    const m=3;
+    if(x<room.x+m||y<room.y+m||x>room.x+room.w-m||y>room.y+room.h-m)return false;
+    return room.poly?inPoly({x,y},room.poly):true;
+  };
+  let comps=comps0.filter(c=>c.pix.length>=5&&inside((c.x0+c.x1)/2,(c.y0+c.y1)/2));
+  comps=comps.filter(c=>c.h<=70&&c.w<=140);
+  if(!comps.length)return[];
+  const hs=comps.map(c=>c.h).sort((a,b)=>a-b),href=hs[Math.floor(hs.length*0.75)];
+  const small=comps.filter(c=>c.h>=0.4*href||c.w>=0.4*href);
+  const par=small.map((_,i)=>i),find=i=>par[i]===i?i:(par[i]=find(par[i]));
+  for(let i=0;i<small.length;i++)for(let j=i+1;j<small.length;j++){
+    const a=small[i],b=small[j];
+    const gapX=Math.max(0,Math.max(a.x0,b.x0)-Math.min(a.x1,b.x1)),ov=Math.min(a.y1,b.y1)-Math.max(a.y0,b.y0);
+    if(gapX<=1.1*href&&ov>=0.3*Math.min(a.h,b.h))par[find(i)]=find(j);
+  }
+  const groups={};small.forEach((c,i)=>{(groups[find(i)]=groups[find(i)]||[]).push(c)});
+  const lines=[];
+  for(const g of Object.values(groups)){
+    let x0=W,y0=H,x1=0,y1=0,n=0;for(const c of g){x0=Math.min(x0,c.x0);y0=Math.min(y0,c.y0);x1=Math.max(x1,c.x1);y1=Math.max(y1,c.y1);n+=c.pix.length}
+    const w=x1-x0+1,h=y1-y0+1;
+    if(h<0.5*href||(g.length<2&&w<0.5*href))continue;
+    const mask=new Uint8Array(w*h);for(const c of g)for(const p of c.pix){const x=p%W,y=(p-x)/W;mask[(y-y0)*w+(x-x0)]=1}
+    lines.push({x:x0,y:y0,w,h,mask,n,ncomp:g.length,comps:g});
+  }
+  return lines.sort((a,b)=>a.y-b.y);
+}
+
+// ---- Letter-level reading: split a line into letter pieces, then decode against the room-name list. ----
+const LG_W=8,LG_H=10;
+// A piece is {x0,y0,x1,y1,pix:[index...]} from a W-wide image. Pieces that overlap sideways are one letter.
+function mergePieces(comps,W){
+  const ps=comps.map(c=>({x0:c.x0,y0:c.y0,x1:c.x1,y1:c.y1,pix:c.pix.slice()})).sort((a,b)=>a.x0-b.x0);
+  let changed=true;
+  while(changed){
+    changed=false;
+    for(let i=0;i<ps.length&&!changed;i++)for(let j=i+1;j<ps.length;j++){
+      const a=ps[i],b=ps[j],ov=Math.min(a.x1,b.x1)-Math.max(a.x0,b.x0)+1,mw=Math.min(a.x1-a.x0+1,b.x1-b.x0+1);
+      if(ov>=0.5*mw){a.x0=Math.min(a.x0,b.x0);a.x1=Math.max(a.x1,b.x1);a.y0=Math.min(a.y0,b.y0);a.y1=Math.max(a.y1,b.y1);a.pix=a.pix.concat(b.pix);ps.splice(j,1);changed=true;break}
+    }
+    ps.sort((a,b)=>a.x0-b.x0);
+  }
+  return ps;
+}
+function pieceGrid(p,W){
+  const w=p.x1-p.x0+1,h=p.y1-p.y0+1,a=new Float32Array(w*h);
+  for(const q of p.pix){const x=q%W,y=(q-x)/W;a[(y-p.y0)*w+(x-p.x0)]=1}
+  return {aspect:w/h,g:toGrid(a,w,h,0,0,w,h,LG_W,LG_H)};
+}
+function unionPiece(a,b){return {x0:Math.min(a.x0,b.x0),y0:Math.min(a.y0,b.y0),x1:Math.max(a.x1,b.x1),y1:Math.max(a.y1,b.y1),pix:a.pix.concat(b.pix)}}
+const _strokeLetter={};
+function strokeLetterGrid(str){
+  if(_strokeLetter[str])return _strokeLetter[str];
+  const r=renderWord(str,30),b=inkBox(r.a,r.w,r.h,.5);
+  return _strokeLetter[str]={aspect:b.w/b.h,g:toGrid(r.a,r.w,r.h,b.x,b.y,b.w,b.h,LG_W,LG_H)};
+}
+function gridDist(a,b){let s=0;for(let i=0;i<a.length;i++)s+=Math.abs(a[i]-b[i]);return s/a.length}
+// bank: {A:[{aspect,g}], ...} of examples written by the person. Strokes from the built-in font are always tried too.
+function letterCost(P,ch,bank,W){
+  const pg=P._g||(P._g=pieceGrid(P,W));let best=9;
+  if(P._bid!==bank._id){P._lc={};P._gl={};P._bid=bank._id}
+  if(P._lc[ch]!==undefined)return P._lc[ch];
+  const tryT=(t,bonus)=>{const c=gridDist(pg.g,t.g)*3+0.25*Math.abs(Math.log(pg.aspect/t.aspect))-bonus;if(c<best)best=c};
+  tryT(strokeLetterGrid(ch),0);
+  for(const e of (bank[ch]||[]))tryT(e,0.04);
+  return P._lc[ch]=best;
+}
+// Expected look of several letters written together: each letter's usual shape, side by side.
+function meanLetter(ch,bank){
+  const ex=bank[ch];if(!ex||!ex.length)return strokeLetterGrid(ch);
+  const g=new Float32Array(LG_W*LG_H);let asp=0;for(const e of ex){for(let i=0;i<g.length;i++)g[i]+=e.g[i]/ex.length;asp+=e.aspect/ex.length}
+  return {aspect:asp,g};
+}
+function glueCost(P,str,bank,W){
+  if(P._bid!==bank._id){P._lc={};P._gl={};P._bid=bank._id}
+  if(P._gl[str]!==undefined)return P._gl[str];
+  const k=str.length,cols=LG_W*k;
+  const tg=new Float32Array(cols*LG_H);
+  // template strip: each letter takes a share of the width proportional to its aspect
+  const ls=str.split('').map(c=>meanLetter(c,bank)),tot=ls.reduce((s,l)=>s+l.aspect,0);
+  let x0=0;
+  for(const l of ls){
+    const w=Math.max(1,Math.round(cols*l.aspect/tot)),x1=Math.min(cols,x0+w);
+    for(let x=x0;x<x1;x++){const sx=Math.min(LG_W-1,Math.floor((x-x0)*LG_W/(x1-x0)));for(let y=0;y<LG_H;y++)tg[y*cols+x]=l.g[y*LG_W+sx]}
+    x0=x1;
+  }
+  const w=P.x1-P.x0+1,h=P.y1-P.y0+1,a=new Float32Array(w*h);
+  for(const q of P.pix){const x=q%W,y=(q-x)/W;a[(y-P.y0)*w+(x-P.x0)]=1}
+  const pg=toGrid(a,w,h,0,0,w,h,cols,LG_H);
+  return P._gl[str]=gridDist(pg,tg)*3+0.25*Math.abs(Math.log((w/h)/tot))+0.1*(k-1);
+}
+// Aligns the pieces with the letters of one word. Returns {cost: average per letter, ones: [[piece index, letter index], ...]}.
+function decodeWord(pieces,word,bank,W){
+  const L=word.replace(/ /g,'').split(''),n=L.length,m=pieces.length,INF=1e9;
+  const D=Array.from({length:m+1},()=>new Array(n+1).fill(INF)),B=Array.from({length:m+1},()=>new Array(n+1).fill(null));D[0][0]=0;
+  const upd=(i,j,c,from,kind)=>{if(c<D[i][j]){D[i][j]=c;B[i][j]={from,kind}}};
+  for(let i=0;i<=m;i++)for(let j=0;j<=n;j++){
+    const cur=D[i][j];if(cur>=INF)continue;
+    if(i<m&&j<n)upd(i+1,j+1,cur+letterCost(pieces[i],L[j],bank,W),[i,j],'one');
+    if(i<m)for(let k=2;k<=3&&j+k<=n;k++)upd(i+1,j+k,cur+glueCost(pieces[i],L.slice(j,j+k).join(''),bank,W),[i,j],'glue');
+    if(i+1<m&&j<n)upd(i+2,j+1,cur+letterCost(unionPiece(pieces[i],pieces[i+1]),L[j],bank,W)+0.1,[i,j],'split');
+    if(i<m)upd(i+1,j,cur+0.45,[i,j],'stray');
+    if(j<n)upd(i,j+1,cur+0.6,[i,j],'miss');
+  }
+  const ones=[];let i=m,j=n;
+  while(B[i]&&B[i][j]){const b=B[i][j];if(b.kind==='one')ones.push([b.from[0],b.from[1]]);[i,j]=b.from}
+  return {cost:D[m][n]/n,ones};
+}
+function rankLetters(pieces,words,bank,W){
+  return words.map(w=>({word:w,score:-decodeWord(pieces,w,bank,W).cost})).sort((a,b)=>b.score-a.score);
+}
+
+// Learns letter shapes from lines whose words are known (two passes, so lines with joined letters also help).
+let _bankId=0;
+const newBank=()=>({_id:++_bankId});
+function buildBank(lines){
+  let bank=newBank();
+  const add=(bk,d,pi,ch)=>{(bk[ch]=bk[ch]||[]).push(pieceGrid(d.pieces[pi],d.W))};
+  for(const d of lines){const L=d.word.split('');if(d.pieces.length===L.length)d.pieces.forEach((p,i)=>add(bank,d,i,L[i]))}
+  for(let round=0;round<2;round++){
+    const next=newBank();
+    for(const d of lines){
+      const L=d.word.replace(/ /g,'').split('');
+      const r=decodeWord(d.pieces,d.word,bank,d.W);
+      for(const [pi,li] of r.ones)add(next,d,pi,L[li]);
+    }
+    bank=next;
+  }
+  return bank;
+}
+
+// ---- Handwriting memory: letter shapes from the built-in samples plus the corrections made in this browser. ----
+const INK_SEED={"E":["1.17:fgillg82kifdc941oia54432ng844676mhb8acb9nlheec96nnkfb853kmkd9888fklhfhjkcjppprst","0.78:9bfjke61ijjjhb41qnieb632tld98876sleceedarnjiihd9nmkigda7jlkhfedbgmomllkifnsrponm","0.61:9ejmpqomgjlkiigennkebaaapokdbbddnpmhfffemomheca8lmic8753lmida976kooljhebjpttrnhc","0.75:bfkmg820ijigb520qle85311tmb53443tnfa9997spkgeda8rqlgc975ookd9765illifeeddinpponm"],"G":["1.10:4ahkje718dfdb841dfb63210hf932110ke867631lfacge84kfcgmmf9hgfhlmifbehhhghk6cggcafl","1.00:39hkf7207bfd9410bdc74200ge965420je88cb51ld79hib4le8bjmgajgcejlkheghgffimaehfb9fn","0.76:4biic4108fjg9310eiib5200kkf73100olfb7310rmjjf931sonomg94sqpolie9mnnieegggjic79gl"],"A":["0.83:bkoja300bimkd610cgiiga41efedge82hhcafid7ljecfkidolgcdhjjpkd879eiqi83237cqg610136","0.67:2akmd4104cnph7206fqunc419jtwsh72bluxunc5enuvvrjcipsstupinqokmqqmrqjcchjivqg758bb"],"R":["0.96:8cgiid61cccdfd61gd89dc61heaaca41ggfec720eikhd842chigdb989eeb9bde7ba646ad69941247","0.80:8hprqlb4ejlkkke6mlgcfjf7tneafjd6wpgeih93xrmllf62vtrqng84qrpnmjeamnkfeghhklh96agk","0.77:ahmjb410eikjd510kihhd610okhgc510solib410usqld732rrplgda8mlieeffeggb779bdcd931357","0.92:imonjd51kkighe82kidbef93hhdbee72dhhgea41bimke8319iomgb758fljgedd5adcabeh257535ag"],"O":["1.21:9dhjkoolffdbchnpmg945blsqg612aluqg613bmsqg625emoph859hkhmjebfjgagjkjjha4bhnokd62","0.81:afmrsne6gjlmonjemlgdflonqlb69jqstla5akqqtlb8enokqleelplekkklpnf8djoqng839iqqja41","0.67:3amtqh836eousme8aiprrqnigmokkpsrnplddmuwuskbbluyxtldenuwutokmqrqlprssqkfdkswune7","0.71:bjswwsjbinqqqrniqqmhiorrvqh9bltwwoc6bmuxvmb7eoutwoeckrrmvrkkprmeqqqrsne7intvrj93","0.79:ekppqojdkljggjkjqlc77ckpsk9229jssj8229ktrj824cmsnjb58hnoiifcfllhafikmmg95bkqqkb4"],"T":["1.19:57cgkkif9bdhiea7babefa42656be930114afa30003aea300029ea400027db510016dc610015cd71","1.59:knqomlllijlnnmjibbdjlida347fhc63015df930014cf920004bfa30003afa300039eb400029ec41","1.14:ceinrsrpjkmonlhfijllhb759aehd621239ec510027dc610017dd710016de720014be820003ad820"],"S":["0.79:36acc9418bcb8520egfa6321efeb9754789abccb22358dhi00247cgh0247acca259ba96438cc8421","0.79:9fkh8200fije6200nmjd8421nmkheb75efggggfd5678bfkm11237emp0015bill013ahjhc015ejib5"],"D":["0.63:mlje9521mmkheb74jkiefgechie9afkmehd67emrcgfabhnoagjhikjf8gmmkhb67flke9428eie7310","0.72:qi942100slea6421rmheca64ojebcdcalha67cghjg934ahlggb56djkcecadhif7adfhhd836chhd73"],"H":["0.75:74128b82e9338da4kd538fd6kg95agf9jifcfjicilliikjfhmmhdfihfjia69fjbfd636di8cb524ag","0.72:mg9afe72mh99fg93ni97eid6ojc9ejhapmgcejkgqnhcbgkmqme76bjonja338flkha3159bihb31234","0.61:lkd52221mle76852nmf9bec6nmf9djicongaelmhrpjegmojurkefkmjupg99fhgslb448a9qj922443","0.71:9634bhd6ea54ahf8ie85aiickhb8dlnjlkhehmpolmkgfjoqllhb9ckpkic537flkha3149dkha30245"],"I":["0.35:gmng7200gnrne610cltund416fqwtk822amvwoc317iswrf515eqwsh803bnvulb018jtvpi015fqwup","0.17:zzywtqqqzzzywvuuzzzzyyyyzzzzzzzzzzzzzzzzzzzzzzzzyzzzzzzzvwxyzzyylosvxxwvbfmswwtq","0.25:7grvqg728hsxumc5fmuyxqf6oswzysg7ptwzysg7kpvyysh7iovyysjajovyytkcgnuyysjacktyysh7","0.19:zzzzxob2zzzzxob2zzzzxob2zzzzxoc3zzzzxpe6zzzzxrhayyzzyskftvxzyvrojouyzyxwahrxzzzz","0.22:uvwria41lotupg71agqwvma24cpxxpc42boxxric2boxywrp2boxzyxx2bnwzzyy29ktxxvt17gpuuro","0.17:yyytlc51uvxwri82kouxwna29gqxxob33coxxqf72boxytmh2boxzxus2bnwzyyy29luyzzz28irwyzz"],"N":["0.81:321017eh962028gkic5128hmojb439inqoh959inqpmfacjnnnkigimpkifehlopgea8cimmdc746chi","0.78:221015ci774116ejge9327fkkkf748glimkd7ainelnidfmrcjlhgkqvbghdeksw9ee88ems9dc648gm","0.78:652117hqdb6217hrihc537irikib68irhkjfccipghgffglpggdadinqggb68elpfgb438dgdea31368","0.80:110016el531017iqd83129lukf833anvole75cnuookdbgosmmjgglpqijgdglonegd89dggceb53688","0.52:10015ekk43216flkba637flkiie88glkjnmfchmkgnqliknlbjponoqo7fmnnqst4ckkimru3bjiegns","0.50:32116eheb9537gkhjid8aimjjmlfeknkelqnlnol9iqrprrp5enpprtt3blmjkno29jkebcd18hjb544"],"F":["0.71:eggfghjjkkheccbaole97643nkd76642llhdcb85illhfda6ejkea854chg93211agf710009ee71000","0.82:mnprrqolrpmkigeduoga7654slb41111pkb52210nmhc9742momifb73immhda63djib6421agg82100","0.71:hknoppnmkljhgfedmke86544kjc52211ijf96521fkkgc841cjlhc7319gid73108eg931007df82000","0.64:mprrqmf9rpligea6une86654ulb54566smea9aa9qokgeca7nokea753jkg94210ehe61000cge61000"],"L":["0.75:jlg71000lmh71000moi81000noj81000noi81000mnh71000nnh83234opkebabbmonlkjihgknoomjf","0.73:mja20000mja20000mja20000mja20000mja20000oka20000qmd52221pnhb9887ijjhhhhg9cgjklmm","0.89:qph71000poh71000ong71000nng71000nng71000nng71000nnh83221nokd9876orqmjgecosvuqlhe","0.65:xqf51000xrg61000ysh61000ysh61000ysh61000ysh61000yti83222yumea999ywrligedzwsokhdb","0.50:mssi7100svsi7100xxti7100zyti7100zyti7100zyti7100zyuk9422yyvogb98wxxuplifswyywsnj"],"U":["1.10:kb3016dine4116flqg6116fmqh7116elqi8227fini9339efkic55bebfhfabec7afjihf946dlole62"],"M":["0.92:1114bfb47426eje7gb6ajniaojeflokdqolkjkjgpomiefijlkgb7ahlhf9437flca5115el763114dl"],"V":["0.89:gb513blqjg934dlnjje77fkjdihbbikf7diggljc39hlnnh915fosoe603alrnc3016gmj92004bhe61"],"C":["0.57:0139horr149fjkih39hkic867fmkc521dkmf6100jnkb3000noi82111nnib7666ilmjhgfecjprrqom","0.70:0149gie8138ehfa639fhe8438eif8310fjh93100mld51000smb31233tnd778aapnjgfgfejnppmjfd"],"B":["0.65:fjkjfa41jljgfd72kmjegga4fkjghib4bilkljc69hmmljfd7fljggik5cigcdjm39fgfhji26djmnjd"]};
+const decodeInk=list=>list.map(s=>{const i=s.indexOf(':');return {aspect:+s.slice(0,i),g:Float32Array.from(s.slice(i+1),ch=>parseInt(ch,36)/35)}});
+const encodeInk=e=>e.aspect.toFixed(2)+':'+Array.from(e.g,v=>Math.max(0,Math.min(35,Math.round(v*35))).toString(36)).join('');
+let inkPersonal={},inkWords=[];
+try{inkPersonal=JSON.parse(localStorage.getItem('breakerbook-ink')||'{}');inkWords=JSON.parse(localStorage.getItem('breakerbook-words')||'[]')}catch(e){}
+let _inkBank=null;
+function inkBank(){
+  if(_inkBank)return _inkBank;
+  const b=newBank();
+  for(const ch of Object.keys(INK_SEED))b[ch]=decodeInk(INK_SEED[ch]);
+  for(const ch of Object.keys(inkPersonal))b[ch]=(b[ch]||[]).concat(decodeInk(inkPersonal[ch]));
+  return _inkBank=b;
+}
+const titleCase=s=>s.toLowerCase().replace(/\b[a-z]/g,c=>c.toUpperCase());
+const ROOM_NAME_LIST=['Kitchen','Living Room','Dining Room','Family Room','Front Room','Great Room','Bedroom','Master Bedroom','Guest Bedroom','Bathroom','Bath','Half Bath','Powder Room','Hall','Hallway','Foyer','Entry','Mud Room','Laundry','Laundry Room','Garage','Office','Study','Den','Utility','Storage','Finished','Unfinished','Basement','Furnace Room','Workshop','Closet','Pantry','Attic','Porch','Deck','Sunroom','Game Room','Play Room','Media Room','Crawl Space','Cold Room'];
+// Reads the handwriting inside each room found. Returns one entry per room: null (nothing readable) or {guess, sure, chips, crop, lines}.
+function readRoomNames(gray,W,H,found,sc){
+  const comps=handwritingComponents(localDarkMask(gray,W,H,20,14),W,H);
+  const bank=inkBank(),vocab=ROOM_WORDS.concat(inkWords.filter(w=>!ROOM_WORDS.includes(w)));
+  return found.map(c=>{
+    const room={x:c.x/sc,y:c.y/sc,w:c.w/sc,h:c.h/sc,poly:c.poly?c.poly.map(p=>({x:p.x/sc,y:p.y/sc})):null};
+    const lines=textLinesInRoom(comps,W,H,room).filter(l=>!(l.ncomp<2&&l.n/(l.w*l.h)<0.14)).map(l=>{
+      const pieces=mergePieces(l.comps,W),rk=rankLetters(pieces,vocab,bank,W);
+      return {x:l.x,y:l.y,w:l.w,h:l.h,pieces,top:rk.slice(0,3),good:rk[0].score>-0.46};
+    }).filter(l=>l.good&&l.pieces.length>=2);   // single blobs are wall corners or smudges, not words
+    if(!lines.length)return null;
+    const guess=titleCase(lines.map(l=>l.top[0].word).join(' '));
+    const m=lines.map(l=>l.top[0].score-l.top[1].score);
+    const sure=m[0]>=0.04&&lines.slice(1).every((l,i)=>l.top[0].word==='ROOM'||m[i+1]>=0.04);
+    const chips=[guess];
+    if(lines.length===1)lines[0].top.slice(1).forEach(t=>chips.push(titleCase(t.word)));
+    return {lines,guess,sure,chips:[...new Set(chips)],crop:cropLines(lines,W)};
+  });
+}
+// Small picture of the handwriting, shown beside the name box so it is easy to check.
+function cropLines(lines,Wk){
+  try{
+    const s=sk.img.width/Wk;let x0=1e9,y0=1e9,x1=-1,y1=-1;
+    lines.forEach(l=>{x0=Math.min(x0,l.x);y0=Math.min(y0,l.y);x1=Math.max(x1,l.x+l.w);y1=Math.max(y1,l.y+l.h)});
+    x0=Math.max(0,x0-6);y0=Math.max(0,y0-6);x1=Math.min(Wk,x1+6);y1=y1+6;
+    const sw=(x1-x0)*s,sh=(y1-y0)*s,k=Math.min(1,150/sw,60/sh),cv=document.createElement('canvas');
+    cv.width=Math.max(1,Math.round(sw*k));cv.height=Math.max(1,Math.round(sh*k));
+    cv.getContext('2d').drawImage(sk.img,x0*s,y0*s,sw,sh,0,0,cv.width,cv.height);
+    return cv.toDataURL('image/jpeg',0.7);
+  }catch(e){return ''}
+}
+// The name the person confirmed teaches the reader their handwriting (kept only in this browser).
+function learnFromCandidate(c,typed){
+  try{
+    const rd=c.read;if(!rd||!rd.lines.length)return;
+    const words=typed.toUpperCase().replace(/[^A-Z ]/g,' ').trim().split(/\s+/).filter(Boolean);
+    if(!words.length)return;
+    const per=words.length===rd.lines.length?words:rd.lines.length===1?[words.join(' ')]:null;
+    if(!per)return;
+    const bank=inkBank();let learned=false;
+    per.forEach((word,k)=>{
+      const line=rd.lines[k],L=word.replace(/ /g,'').split(''),r=decodeWord(line.pieces,word,bank,c.W);
+      if(r.cost>0.5)return;
+      const pairs=line.pieces.length===L.length?L.map((ch,i)=>[i,i]):r.ones;
+      for(const [pi,li] of pairs){const ch=L[li];if(!/[A-Z]/.test(ch))continue;(inkPersonal[ch]=inkPersonal[ch]||[]).push(encodeInk(pieceGrid(line.pieces[pi],c.W)));if(inkPersonal[ch].length>8)inkPersonal[ch].shift();learned=true}
+      word.split(' ').forEach(w=>{if(w.length>=3&&!ROOM_WORDS.includes(w)&&!inkWords.includes(w))inkWords.push(w)});
+    });
+    if(inkWords.length>60)inkWords=inkWords.slice(-60);
+    if(learned){localStorage.setItem('breakerbook-ink',JSON.stringify(inkPersonal));localStorage.setItem('breakerbook-words',JSON.stringify(inkWords));_inkBank=null}
+  }catch(e){}
+}
+
 async function skDetect(){
   const ft=+$('skFt').value;
   if(sk.pts.length<2){skMsg('Tap two points on a wall first.');return}
@@ -775,7 +1134,9 @@ async function skDetect(){
     const gray=new Uint8Array(Wk*Hk);
     for(let i=0;i<Wk*Hk;i++)gray[i]=(d[i*4]*0.3+d[i*4+1]*0.59+d[i*4+2]*0.11)|0;
     const found=findRoomsMerged(gray,Wk,Hk,sk.img.width/Wk);
-    sk.cands=found.map(r=>({...r,wf:clamp(Math.round(r.w*sk.k),1,200),hf:clamp(Math.round(r.h*sk.k),1,200)}));
+    let reads=[];
+    try{reads=readRoomNames(gray,Wk,Hk,found,sk.img.width/Wk)}catch(err){reads=[]}
+    sk.cands=found.map((r,i)=>{const rd=reads[i]||null;return {...r,wf:clamp(Math.round(r.w*sk.k),1,200),hf:clamp(Math.round(r.h*sk.k),1,200),read:rd,W:Wk,pre:rd&&rd.sure?rd.guess:''}});
     skStage('review');
   }catch(err){skMsg('Could not finish: '+((err&&err.message)||err)+'. Try a clearer photo.')}
 }
@@ -788,7 +1149,9 @@ function skAdd(){
   const OFFS=[[0,0],[0,1],[0,-1],[1,0],[-1,0],[0,2],[0,-2],[2,0],[-2,0]];
   chosen.forEach(({c,i},j)=>{
     const Q=aligned[j];
-    const name=(document.querySelector(`[data-nm="${i}"]`)?.value||'').trim()||`Room ${i+1}`;
+    const typed=(document.querySelector(`[data-nm="${i}"]`)?.value||'').trim();
+    const name=typed||`Room ${i+1}`;
+    if(typed)learnFromCandidate(c,typed);
     const mx=Math.min(...Q.map(p=>p.x)),my=Math.min(...Q.map(p=>p.y));
     const pw=Math.max(...Q.map(p=>p.x))-mx,ph=Math.max(...Q.map(p=>p.y))-my;
     const r={id:uid('r'),floor:cur,name,x:mx,y:my,w:Math.max(1,Math.round(ph/PX)),h:Math.max(1,Math.round(pw/PX))};
@@ -882,7 +1245,7 @@ document.addEventListener('click',e=>{
   const t=e.target.closest('[data-act]');if(!t)return;
   const a=t.dataset.act,id=t.dataset.id,k=t.dataset.kind;
   let changed=true;
-  if(a==='sel')sel={kind:k,id};
+  if(a==='sel'){sel={kind:k,id};if(k==='panel')curPanel=id}
   else if(a==='tab'){cur=+t.dataset.i;sel=null;changed=false}
   else if(a==='open')$('fIn').click();
   else if(a==='new'){if(dirty)$('ndlg').classList.add('open');else newFile();changed=false}
@@ -935,7 +1298,7 @@ document.addEventListener('click',e=>{
     else{
       const cnt=S.panels.filter(q=>q.floor===cur).length;
       const p={id:uid('p'),num:nextPanelNum(),name:n,location:'',total:+$('bpTot').value||0,floor:cur,room:'',x:null,y:null};
-      S.panels.push(p);
+      S.panels.push(p);curPanel=p.id;
     }
   }
   else if(a==='setupOpen'){openWiz();changed=false}
@@ -1010,6 +1373,8 @@ document.addEventListener('click',e=>{
     phPending.conflicts.forEach(c=>updateFromPhoto(c.ex,c.b));
     finishPhoto(phPending.added,phPending.conflicts.length);
   }
+  else if(a==='pickPanel'){curPanel=id;bform=null;changed=false}
+  else if(a==='skPick'){const el=document.querySelector(`[data-nm="${t.dataset.i}"]`);if(el)el.value=t.dataset.v;changed=false}
   else if(a==='undo'){
     if(undoStack.length){S=JSON.parse(undoStack.pop());lastSnap=snapKey();sel=null;bform=null;setStat('Undone.')}
     else setStat('Nothing to undo.');
@@ -1065,7 +1430,7 @@ document.addEventListener('click',e=>{
     S.rooms.filter(r=>r.floor===cur).forEach(r=>{const b=roomBox(r),s=spotFor(placed,b.w,b.h);r.x=s.x;r.y=s.y;placed.push(roomBox(r))});
     S.devices.forEach(d=>{if(d.room&&d.x!=null)clampDev(d)});
   }
-  else if(a==='addFloor'){const n=$('fName').value.trim();if(n){S.floors.push(n);cur=S.floors.length-1}else changed=false}
+  else if(a==='addFloor'){const n=$('fName').value.trim();if(n){S.floors.push(n);cur=S.floors.length-1;ensureGarageRoom(cur)}else changed=false}
   else if(a==='addRoom'){
     if(!S.floors.length){setStat('Add a floor first.');changed=false}
     else{const r=addRoom($('rName').value.trim()||'Room',$('rW').value,$('rH').value,cur);sel={kind:'room',id:r.id}}
@@ -1078,7 +1443,7 @@ document.addEventListener('click',e=>{
   else if(a==='addPanel'){
     const n=S.panels.filter(q=>q.floor===cur).length;
     const p={id:uid('p'),num:nextPanelNum(),name:$('pName').value.trim()||'Panel',total:+$('pTot').value||0,floor:$('pFloor')?+$('pFloor').value:cur,room:$('pRoom')?.value||'',x:null,y:null};
-    S.panels.push(p);placeDev(p);sel={kind:'panel',id:p.id};
+    S.panels.push(p);placeDev(p);sel={kind:'panel',id:p.id};curPanel=p.id;
   }
   else if(a==='addBreaker'){
     const slot=+$('bSlot').value;
@@ -1188,5 +1553,6 @@ svg.addEventListener('pointerup',endDrag);
 svg.addEventListener('pointercancel',endDrag);
 
 try{const d=localStorage.getItem('breakerbook-draft');if(d){S=Object.assign(blank(),JSON.parse(d));dirty=true;setStat('Restored unsaved work.')}}catch(e){}
+$('roomNames').innerHTML=ROOM_NAME_LIST.map(n=>`<option value="${n}">`).join('');
 render();
 </script></body></html>
