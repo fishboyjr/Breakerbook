@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>BreakerBook v47</title>
+<title>BreakerBook v48</title>
 
 <style>
 :root{color-scheme:light dark;--bg:#f5f5f3;--fg:#1d1d1f;--pn:#fff;--ln:#cfcfca;--ac:#2b6cb0}
@@ -97,7 +97,7 @@ textarea{width:100%;font:inherit;color:inherit;background:var(--bg);border:1px s
 .pgr{max-height:62vh;overflow:auto;padding-right:4px}
 @media(max-width:640px){.pg{grid-template-columns:1fr}.pgl{max-height:40vh}.pgr{max-height:none}}
 </style></head><body>
-<header><b>BreakerBook <span class="sm">v47</span></b>
+<header><b>BreakerBook <span class="sm">v48</span></b>
 <button data-act="open">Open file</button><button data-act="save">Save file</button><button data-act="printOpts">Print</button><button data-act="undo">Undo</button><button data-act="new">New</button>
 <input type="file" id="fIn" accept=".json,application/json" hidden><span class="sm" id="stat"></span></header>
 <main><div id="plan"><div id="tabs"></div><svg id="svg" viewBox="0 0 960 640"></svg><div id="bview"></div></div><aside id="side"></aside></main><div id="pdlg"><div class="box">
@@ -445,7 +445,7 @@ function renderSide(){
     ${S.floors.map((f,i)=>{const c=floorCounts(i);return `<div class="it"><input data-fl="${i}" value="${esc(f)}" style="flex:1"><span class="sm">${c.r} rooms</span><button class="danger" data-act="floorDel" data-i="${i}">Delete</button></div>`}).join('')||'<p class="sm">No floors yet.</p>'}
     <h3>Add floor</h3>
     <div class="row"><input id="fName" placeholder="New floor name"><button data-act="addFloor">Add floor</button></div>
-    <div class="row"><button data-act="setupOpen">Run setup</button><button data-act="sketch">Import rooms from sketch</button></div>
+    <div class="row"><button data-act="setupOpen">Run setup</button></div>
     <h3>Panels on ${esc(fl)}</h3>
     ${list(S.panels.filter(p=>p.floor===cur),p=>`<div class="it ${sel?.id===p.id?'sel':''}" data-act="sel" data-kind="panel" data-id="${p.id}"><span>${esc(p.name)} <span class="sm">${esc(p.location)}</span></span><span class="sm">${avail(p).length} available</span></div>`)}
     <h3>Add panel</h3>
@@ -454,7 +454,7 @@ function renderSide(){
     <div class="row"><button data-act="addPanel">Add panel to this floor</button></div>`;
   if(mode==='rooms')body=`<h3>Rooms on ${esc(fl)}</h3>
     ${S.floors.length?list(roomsHere,r=>`<div class="it ${sel?.id===r.id?'sel':''}" data-act="sel" data-kind="room" data-id="${r.id}"><span>${esc(r.name)}</span><span class="sm">W ${r.w} × L ${r.h} ft</span></div>`):'<p class="sm">Add a floor first.</p>'}
-    ${drawing?`<div class="row"><button data-act="drawFinish">Finish room (${drawing.length} corners)</button><button data-act="drawUndo">Undo corner</button><button data-act="drawCancel">Cancel</button></div>`:`<div class="row"><button data-act="drawStart">Draw irregular room</button></div>`}
+    ${drawing?`<div class="row"><button data-act="drawFinish">Finish room (${drawing.length} corners)</button><button data-act="drawUndo">Undo corner</button><button data-act="drawCancel">Cancel</button></div>`:`<div class="row"><button data-act="drawStart">Draw irregular room</button><button data-act="sketch">Import rooms from sketch</button></div>`}
     <h3>Add room</h3>
     <div class="row"><input id="rName" placeholder="Room name"></div>
     <div class="row"><input id="rW" type="number" placeholder="Width ft"><input id="rH" type="number" placeholder="Length ft"><button data-act="addRoom">Add room</button></div>`;
@@ -634,7 +634,7 @@ function findRoomsInGray(gray,W,H,sc){
 }
 // Straightens an outline: each wall is turned to the nearest allowed direction (0, 24, 33, 45, 57, 66 and 90 degrees,
 // in all four quadrants), and corners are moved to where neighbouring walls meet.
-const ALLOWED_DEG=[0,24,33,45,57,66,90,114,123,135,147,156];
+const ALLOWED_DEG=[0,45,90,135];
 function crossesSelf(P){const n=P.length;const cr=(p,q,r)=>(q.x-p.x)*(r.y-p.y)-(q.y-p.y)*(r.x-p.x);for(let i=0;i<n;i++)for(let j=i+2;j<n;j++){if(i===0&&j===n-1)continue;const a=P[i],b=P[(i+1)%n],c=P[j],d=P[(j+1)%n];const d1=cr(c,d,a),d2=cr(c,d,b),d3=cr(a,b,c),d4=cr(a,b,d);if(((d1>0&&d2<0)||(d1<0&&d2>0))&&((d3>0&&d4<0)||(d3<0&&d4>0)))return true}return false}
 function snapAngles(P){
   const n=P.length;if(n<4)return P;
@@ -690,6 +690,38 @@ function findRoomsMerged(g,W,H,sc){
   return acc.sort((p,q)=>q.w*q.h-p.w*p.h);
 }
 
+// Groups nearby coordinates (within tol, measured from the first value in each group) and gives each group one shared value.
+function clusterCoords(vals,tol){
+  const idx=vals.map((v,i)=>i).sort((a,b)=>vals[a]-vals[b]);
+  const rep=new Array(vals.length);
+  let g=[];
+  const flush=()=>{if(!g.length)return;const m=g.map(i=>vals[i]).sort((a,b)=>a-b);const med=m[Math.floor(m.length/2)];for(const i of g)rep[i]=med;g=[]};
+  let start=null;
+  for(const i of idx){if(start===null||vals[i]-start<=tol){if(start===null)start=vals[i];g.push(i)}else{flush();start=vals[i];g.push(i)}}
+  flush();
+  return rep;
+}
+// Polygons (absolute plan pixels) for all chosen candidates, aligned so shared and outer walls line up.
+function alignPolys(polys,tol,PX){
+  const pts=[];polys.forEach((P,pi)=>P.forEach((p,vi)=>pts.push({pi,vi,x:p.x,y:p.y})));
+  const xr=clusterCoords(pts.map(p=>p.x),tol),yr=clusterCoords(pts.map(p=>p.y),tol);
+  const out=polys.map(P=>P.map(()=>({x:0,y:0})));
+  pts.forEach((p,i)=>{out[p.pi][p.vi]={x:Math.round(xr[i]/PX)*PX,y:Math.round(yr[i]/PX)*PX}});
+  // Walls that were nearly horizontal/vertical stay horizontal/vertical; diagonal walls stay at 45 degrees.
+  polys.forEach((P,pi)=>{
+    const Q=out[pi],n=P.length;
+    for(let j=0;j<n;j++){
+      const a=P[j],b=P[(j+1)%n],dx=b.x-a.x,dy=b.y-a.y,len=Math.hypot(dx,dy)||1;
+      let ang=Math.atan2(dy,dx)*180/Math.PI;ang=((ang%180)+180)%180;
+      const q1=Q[j],q2=Q[(j+1)%n];
+      if(ang<12||ang>168){q2.y=q1.y}
+      else if(Math.abs(ang-90)<12){q2.x=q1.x}
+      else if(Math.abs(ang-45)<12||Math.abs(ang-135)<12){const sd=(dx*dy)>0?1:-1;q2.y=q1.y+sd*(q2.x-q1.x)}
+    }
+  });
+  return out;
+}
+
 async function skDetect(){
   const ft=+$('skFt').value;
   if(sk.pts.length<2){skMsg('Tap two points on a wall first.');return}
@@ -711,20 +743,19 @@ async function skDetect(){
 }
 function skAdd(){
   const s=sk.k*PX;let added=0,skipped=0;
-  // Imported rooms snap to the 1-foot grid so neighboring walls line up. A room that would overlap
-  // a neighbor is nudged up to two feet away from it.
+  const chosen=sk.cands.map((c,i)=>({c,i})).filter(o=>document.querySelector(`[data-ck="${o.i}"]`)?.checked);
+  const polys=chosen.map(({c})=>c.poly?c.poly.map(p=>({x:40+p.x*s,y:40+p.y*s})):[{x:40+c.x*s,y:40+c.y*s},{x:40+(c.x+c.w)*s,y:40+c.y*s},{x:40+(c.x+c.w)*s,y:40+(c.y+c.h)*s},{x:40+c.x*s,y:40+(c.y+c.h)*s}]);
+  // Walls that are close to the same line become one shared line, so neighbors fit together and the outer outline is straight.
+  const aligned=alignPolys(polys,2.5*PX,PX);
   const OFFS=[[0,0],[0,1],[0,-1],[1,0],[-1,0],[0,2],[0,-2],[2,0],[-2,0]];
-  sk.cands.forEach((c,i)=>{
-    if(!document.querySelector(`[data-ck="${i}"]`)?.checked)return;
+  chosen.forEach(({c,i},j)=>{
+    const Q=aligned[j];
     const name=(document.querySelector(`[data-nm="${i}"]`)?.value||'').trim()||`Room ${i+1}`;
-    const r={id:uid('r'),floor:cur,name,w:c.wf,h:c.hf,x:Math.round((40+c.x*s)/PX)*PX,y:Math.round((40+c.y*s)/PX)*PX};
-    if(c.poly&&c.poly.length>=3){
-      const ab=c.poly.map(p=>({x:Math.round((40+p.x*s)/PX)*PX,y:Math.round((40+p.y*s)/PX)*PX})),mx=Math.min(...ab.map(p=>p.x)),my=Math.min(...ab.map(p=>p.y));
-      r.x=mx;r.y=my;
-      r.pts=ab.map(p=>({x:p.x-mx,y:p.y-my}));
-      r.pw=Math.max(...r.pts.map(p=>p.x));r.ph=Math.max(...r.pts.map(p=>p.y));
-      r.w=Math.max(1,Math.round(r.ph/PX));r.h=Math.max(1,Math.round(r.pw/PX));
-    }
+    const mx=Math.min(...Q.map(p=>p.x)),my=Math.min(...Q.map(p=>p.y));
+    const pw=Math.max(...Q.map(p=>p.x))-mx,ph=Math.max(...Q.map(p=>p.y))-my;
+    const r={id:uid('r'),floor:cur,name,x:mx,y:my,w:Math.max(1,Math.round(ph/PX)),h:Math.max(1,Math.round(pw/PX))};
+    const isRect=Q.length===4&&Q.every((p,k)=>{const q=Q[(k+1)%4];return p.x===q.x||p.y===q.y});
+    if(!isRect&&!polySelf(Q)){r.pts=Q.map(p=>({x:p.x-mx,y:p.y-my}));r.pw=pw;r.ph=ph}
     const others=S.rooms.filter(x=>x.floor===cur);
     let placed=false;
     for(const [dx,dy] of OFFS){
