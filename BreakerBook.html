@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>BreakerBook v45</title>
+<title>BreakerBook v47</title>
 
 <style>
 :root{color-scheme:light dark;--bg:#f5f5f3;--fg:#1d1d1f;--pn:#fff;--ln:#cfcfca;--ac:#2b6cb0}
@@ -97,7 +97,7 @@ textarea{width:100%;font:inherit;color:inherit;background:var(--bg);border:1px s
 .pgr{max-height:62vh;overflow:auto;padding-right:4px}
 @media(max-width:640px){.pg{grid-template-columns:1fr}.pgl{max-height:40vh}.pgr{max-height:none}}
 </style></head><body>
-<header><b>BreakerBook <span class="sm">v45</span></b>
+<header><b>BreakerBook <span class="sm">v47</span></b>
 <button data-act="open">Open file</button><button data-act="save">Save file</button><button data-act="printOpts">Print</button><button data-act="undo">Undo</button><button data-act="new">New</button>
 <input type="file" id="fIn" accept=".json,application/json" hidden><span class="sm" id="stat"></span></header>
 <main><div id="plan"><div id="tabs"></div><svg id="svg" viewBox="0 0 960 640"></svg><div id="bview"></div></div><aside id="side"></aside></main><div id="pdlg"><div class="box">
@@ -585,7 +585,7 @@ function drawSk(){
   }
   if(sk.mode==='review'){
     ctx.strokeStyle='#2b6cb0';ctx.fillStyle='#2b6cb0';ctx.lineWidth=lw;ctx.font=`bold ${Math.round(c.width/35)}px sans-serif`;
-    sk.cands.forEach((cd,i)=>{ctx.strokeRect(cd.x,cd.y,cd.w,cd.h);ctx.fillText(String(i+1),cd.x+lw*2,cd.y+c.width/25)});
+    sk.cands.forEach((cd,i)=>{if(cd.poly){ctx.beginPath();cd.poly.forEach((p,j)=>j?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();ctx.stroke()}else ctx.strokeRect(cd.x,cd.y,cd.w,cd.h);ctx.fillText(String(i+1),cd.x+lw*2,cd.y+c.width/25)});
   }
 }
 function skTap(e){
@@ -624,7 +624,7 @@ function findRoomsInGray(gray,W,H,sc){
       const inC=new Uint8Array(total);for(const p of pix)inC[p]=1;
       let start=pix[0];for(const p of pix)if(p<start)start=p;
       const loop=traceOutline(inC,W,H,start);
-      if(loop.length>=4){const P=simplifyClosed(loop,1.5);const pa=polyArea(P);if(P.length>=3&&pa>area*0.8&&pa<area*1.2)poly=P}
+      if(loop.length>=4){const P=snapAngles(simplifyClosed(loop,Math.max(1.5,0.05*Math.max(bw,bh))));const pa=polyArea(P);if(P.length>=3&&pa>area*0.8&&pa<area*1.2)poly=P}
       if(!poly)continue;
     }
     out.push({x:minX*sc,y:minY*sc,w:bw*sc,h:bh*sc,area,poly:poly?poly.map(p=>({x:p.x*sc,y:p.y*sc})):null});
@@ -632,7 +632,34 @@ function findRoomsInGray(gray,W,H,sc){
   out.sort((a,b)=>b.w*b.h-a.w*a.h);
   return out.filter((r,i)=>!out.slice(0,i).some(o=>r.x>=o.x&&r.y>=o.y&&r.x+r.w<=o.x+o.w&&r.y+r.h<=o.y+o.h));
 }
-
+// Straightens an outline: each wall is turned to the nearest allowed direction (0, 24, 33, 45, 57, 66 and 90 degrees,
+// in all four quadrants), and corners are moved to where neighbouring walls meet.
+const ALLOWED_DEG=[0,24,33,45,57,66,90,114,123,135,147,156];
+function crossesSelf(P){const n=P.length;const cr=(p,q,r)=>(q.x-p.x)*(r.y-p.y)-(q.y-p.y)*(r.x-p.x);for(let i=0;i<n;i++)for(let j=i+2;j<n;j++){if(i===0&&j===n-1)continue;const a=P[i],b=P[(i+1)%n],c=P[j],d=P[(j+1)%n];const d1=cr(c,d,a),d2=cr(c,d,b),d3=cr(a,b,c),d4=cr(a,b,d);if(((d1>0&&d2<0)||(d1<0&&d2>0))&&((d3>0&&d4<0)||(d3<0&&d4>0)))return true}return false}
+function snapAngles(P){
+  const n=P.length;if(n<4)return P;
+  const lines=[];
+  for(let i=0;i<n;i++){
+    const a=P[i],b=P[(i+1)%n],dx=b.x-a.x,dy=b.y-a.y;
+    let th=Math.atan2(dy,dx)*180/Math.PI;th=((th%180)+180)%180;
+    let best=ALLOWED_DEG[0],bd=1e9;
+    for(const v of ALLOWED_DEG){const dd=Math.min(Math.abs(th-v),180-Math.abs(th-v));if(dd<bd){bd=dd;best=v}}
+    const rad=best*Math.PI/180;
+    lines.push({m:{x:(a.x+b.x)/2,y:(a.y+b.y)/2},u:{x:Math.cos(rad),y:Math.sin(rad)}});
+  }
+  const out=[];
+  for(let j=0;j<n;j++){
+    const L1=lines[(j-1+n)%n],L2=lines[j];
+    const det=L1.u.x*L2.u.y-L1.u.y*L2.u.x;
+    if(Math.abs(det)<0.2){out.push(P[j]);continue}
+    const wx=L2.m.x-L1.m.x,wy=L2.m.y-L1.m.y;
+    const t=(wx*L2.u.y-wy*L2.u.x)/det;
+    out.push({x:L1.m.x+t*L1.u.x,y:L1.m.y+t*L1.u.y});
+  }
+  const ok=!crossesSelf(out)&&out.every(p=>isFinite(p.x)&&isFinite(p.y));
+  const a0=polyArea(P),a1=polyArea(out);
+  return ok&&Math.abs(a1-a0)<=0.25*a0?out:P;
+}
 // Local-contrast wall detection: a pixel is a wall if it is clearly darker than the paper around it.
 function prepareGray(g,W,H,closeR){
   const integ=new Float64Array((W+1)*(H+1));
@@ -684,19 +711,27 @@ async function skDetect(){
 }
 function skAdd(){
   const s=sk.k*PX;let added=0,skipped=0;
+  // Imported rooms snap to the 1-foot grid so neighboring walls line up. A room that would overlap
+  // a neighbor is nudged up to two feet away from it.
+  const OFFS=[[0,0],[0,1],[0,-1],[1,0],[-1,0],[0,2],[0,-2],[2,0],[-2,0]];
   sk.cands.forEach((c,i)=>{
     if(!document.querySelector(`[data-ck="${i}"]`)?.checked)return;
     const name=(document.querySelector(`[data-nm="${i}"]`)?.value||'').trim()||`Room ${i+1}`;
     const r={id:uid('r'),floor:cur,name,w:c.wf,h:c.hf,x:Math.round((40+c.x*s)/PX)*PX,y:Math.round((40+c.y*s)/PX)*PX};
     if(c.poly&&c.poly.length>=3){
-      const ab=c.poly.map(p=>({x:40+p.x*s,y:40+p.y*s})),mx=Math.min(...ab.map(p=>p.x)),my=Math.min(...ab.map(p=>p.y));
-      r.x=Math.floor(mx/PX)*PX;r.y=Math.floor(my/PX)*PX;
-      r.pts=ab.map(p=>({x:Math.round(p.x-r.x),y:Math.round(p.y-r.y)}));
+      const ab=c.poly.map(p=>({x:Math.round((40+p.x*s)/PX)*PX,y:Math.round((40+p.y*s)/PX)*PX})),mx=Math.min(...ab.map(p=>p.x)),my=Math.min(...ab.map(p=>p.y));
+      r.x=mx;r.y=my;
+      r.pts=ab.map(p=>({x:p.x-mx,y:p.y-my}));
       r.pw=Math.max(...r.pts.map(p=>p.x));r.ph=Math.max(...r.pts.map(p=>p.y));
       r.w=Math.max(1,Math.round(r.ph/PX));r.h=Math.max(1,Math.round(r.pw/PX));
     }
-    clampRoom(r);
-    if(roomsClash(r,S.rooms.filter(x=>x.floor===cur))){skipped++;return}
+    const others=S.rooms.filter(x=>x.floor===cur);
+    let placed=false;
+    for(const [dx,dy] of OFFS){
+      const t={...r,x:r.x+dx*PX,y:r.y+dy*PX};
+      if(!roomsClash(t,others)){Object.assign(r,{x:t.x,y:t.y});placed=true;break}
+    }
+    if(!placed){skipped++;return}
     S.rooms.push(r);added++;
   });
   $('phdlg').classList.remove('open');
