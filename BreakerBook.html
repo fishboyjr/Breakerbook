@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>BreakerBook v40</title>
+<title>BreakerBook v41</title>
 
 <style>
 :root{color-scheme:light dark;--bg:#f5f5f3;--fg:#1d1d1f;--pn:#fff;--ln:#cfcfca;--ac:#2b6cb0}
@@ -97,7 +97,7 @@ textarea{width:100%;font:inherit;color:inherit;background:var(--bg);border:1px s
 .pgr{max-height:62vh;overflow:auto;padding-right:4px}
 @media(max-width:640px){.pg{grid-template-columns:1fr}.pgl{max-height:40vh}.pgr{max-height:none}}
 </style></head><body>
-<header><b>BreakerBook <span class="sm">v40</span></b>
+<header><b>BreakerBook <span class="sm">v41</span></b>
 <button data-act="open">Open file</button><button data-act="save">Save file</button><button data-act="printOpts">Print</button><button data-act="undo">Undo</button><button data-act="new">New</button>
 <input type="file" id="fIn" accept=".json,application/json" hidden><span class="sm" id="stat"></span></header>
 <main><div id="plan"><div id="tabs"></div><svg id="svg" viewBox="0 0 960 640"></svg><div id="bview"></div></div><aside id="side"></aside></main><div id="pdlg"><div class="box">
@@ -555,8 +555,10 @@ function applyGuide(){
 let sk={mode:'pick',img:null,pts:[],k:0,cands:[]};
 async function loadCV(){
   if(window.cvReady)return;
-  await loadScript('https://docs.opencv.org/4.10.0/opencv.js');
-  window.cv=await Promise.resolve(window.cv);
+  if(!(window.cv&&cv.Mat))await loadScript('https://docs.opencv.org/4.10.0/opencv.js');
+  if(window.cv&&typeof cv.then==='function')window.cv=await cv;
+  // OpenCV.js finishes starting up after its script loads; wait until its functions are ready.
+  await new Promise((res,rej)=>{const t0=Date.now();const check=()=>{if(window.cv&&cv.Mat)res();else if(Date.now()-t0>60000)rej(new Error('the room finder did not start within a minute'));else setTimeout(check,200)};check()});
   window.cvReady=true;
 }
 function skStage(stage){
@@ -631,7 +633,7 @@ async function skDetect(){
     c.getContext('2d').drawImage(sk.img,0,0);
     sk.cands=detectRooms(c).map(r=>({...r,wf:clamp(Math.round(r.w*sk.k),1,200),hf:clamp(Math.round(r.h*sk.k),1,200)}));
     skStage('review');
-  }catch(err){alert('The room finder could not load or read this photo. Check the internet connection and try a clearer photo.');skStage('scale')}
+  }catch(err){alert('Room finder problem: '+((err&&err.message)||err)+'. Check the internet connection, then try again. If it keeps failing, try a clearer photo.');skStage('scale')}
 }
 function skAdd(){
   const s=sk.k*PX;let added=0,skipped=0;
