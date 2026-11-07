@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>BreakerBook v50</title>
+<title>BreakerBook v51</title>
 
 <style>
 :root{color-scheme:light dark;--bg:#f5f5f3;--fg:#1d1d1f;--pn:#fff;--ln:#cfcfca;--ac:#2b6cb0}
@@ -97,7 +97,7 @@ textarea{width:100%;font:inherit;color:inherit;background:var(--bg);border:1px s
 .pgr{max-height:62vh;overflow:auto;padding-right:4px}
 @media(max-width:640px){.pg{grid-template-columns:1fr}.pgl{max-height:40vh}.pgr{max-height:none}}
 </style></head><body>
-<header><b>BreakerBook <span class="sm">v50</span></b>
+<header><b>BreakerBook <span class="sm">v51</span></b>
 <button data-act="open">Open file</button><button data-act="save">Save file</button><button data-act="printOpts">Print</button><button data-act="undo">Undo</button><button data-act="new">New</button>
 <input type="file" id="fIn" accept=".json,application/json" hidden><span class="sm" id="stat"></span></header>
 <main><div id="plan"><div id="tabs"></div><svg id="svg" viewBox="0 0 960 640"></svg><div id="bview"></div></div><aside id="side"></aside></main><div id="pdlg"><div class="box">
@@ -605,6 +605,8 @@ function traceOutline(inC,W,H,start){const sx=start%W,sy=(start-sx)/W;let x=sx,y
 function perpDist(p,a,b){const dx=b.x-a.x,dy=b.y-a.y,len=Math.hypot(dx,dy)||1;return Math.abs(dy*(p.x-a.x)-dx*(p.y-a.y))/len}
 function simplifyOpen(pts,eps){if(pts.length<3)return pts;let maxD=0,idx=0;const a=pts[0],b=pts[pts.length-1];for(let i=1;i<pts.length-1;i++){const d=perpDist(pts[i],a,b);if(d>maxD){maxD=d;idx=i}}if(maxD>eps){const L=simplifyOpen(pts.slice(0,idx+1),eps),R=simplifyOpen(pts.slice(idx),eps);return L.slice(0,-1).concat(R)}return[a,b]}
 function simplifyClosed(loop,eps){const pts=loop.map(([x,y])=>({x,y}));let far=0,fd=-1;for(let i=1;i<pts.length;i++){const d=Math.hypot(pts[i].x-pts[0].x,pts[i].y-pts[0].y);if(d>fd){fd=d;far=i}}const A=simplifyOpen(pts.slice(0,far+1),eps),B=simplifyOpen(pts.slice(far).concat([pts[0]]),eps);return A.slice(0,-1).concat(B.slice(0,-1))}
+function convexHull(P){const p=P.slice().sort((a,b)=>a.x-b.x||a.y-b.y);const cr=(o,a,b)=>(a.x-o.x)*(b.y-o.y)-(a.y-o.y)*(b.x-o.x);const lo=[],up=[];for(const q of p){while(lo.length>=2&&cr(lo[lo.length-2],lo[lo.length-1],q)<=0)lo.pop();lo.push(q)}for(let i=p.length-1;i>=0;i--){const q=p[i];while(up.length>=2&&cr(up[up.length-2],up[up.length-1],q)<=0)up.pop();up.push(q)}return lo.slice(0,-1).concat(up.slice(0,-1))}
+function polyConvexGap(P){return polyArea(convexHull(P))-polyArea(P)}
 function polyArea(P){let s=0;for(let i=0;i<P.length;i++){const a=P[i],b=P[(i+1)%P.length];s+=a.x*b.y-b.x*a.y}return Math.abs(s)/2}
 // gray: Uint8Array of brightness, W x H. sc: original pixels per working pixel.
 function findRoomsInGray(gray,W,H,sc){
@@ -621,13 +623,16 @@ function findRoomsInGray(gray,W,H,sc){
     if(bw<6||bh<6)continue;
     let poly=null;
     if(area/(bw*bh)<0.95){
-      let inC=new Uint8Array(total);for(const p of pix)inC[p]=1;inC=closeRoomMask(inC,W,H,minX,minY,maxX,maxY,3);
+      let inC=new Uint8Array(total);for(const p of pix)inC[p]=1;inC=closeRoomMask(inC,W,H,minX,minY,maxX,maxY,8);
       let start=pix[0];for(const p of pix)if(p<start)start=p;
       const loop=traceOutline(inC,W,H,start);
       if(loop.length>=4){const P=snapAngles(simplifyClosed(loop,Math.max(1.5,0.05*Math.max(bw,bh))));const pa=polyArea(P);if(P.length>=3&&pa>area*0.8&&pa<area*1.2)poly=P}
       if(!poly)continue;
+      // Nearly convex outlines (a stray mark or text touching a wall) are squared off to their bounding box.
+      const hx=poly.map(p=>p.x),hy=poly.map(p=>p.y),x0=Math.min(...hx),x1=Math.max(...hx),y0=Math.min(...hy),y1=Math.max(...hy);
+      if(polyConvexGap(poly)/((x1-x0)*(y1-y0)||1)<=0.1){minX=x0;maxX=x1;minY=y0;maxY=y1;poly=null}
     }
-    out.push({x:minX*sc,y:minY*sc,w:bw*sc,h:bh*sc,area,poly:poly?poly.map(p=>({x:p.x*sc,y:p.y*sc})):null});
+    out.push({x:minX*sc,y:minY*sc,w:(maxX-minX+1)*sc,h:(maxY-minY+1)*sc,area,poly:poly?poly.map(p=>({x:p.x*sc,y:p.y*sc})):null});
   }
   out.sort((a,b)=>b.w*b.h-a.w*a.h);
   return out.filter((r,i)=>!out.slice(0,i).some(o=>r.x>=o.x&&r.y>=o.y&&r.x+r.w<=o.x+o.w&&r.y+r.h<=o.y+o.h));
@@ -684,11 +689,22 @@ function prepareGray(g,W,H,closeR){
 function bboxOverlapRatio(c,o){const ix=Math.max(0,Math.min(c.x+c.w,o.x+o.w)-Math.max(c.x,o.x));const iy=Math.max(0,Math.min(c.y+c.h,o.y+o.h)-Math.max(c.y,o.y));return (ix*iy)/((c.w*c.h)||1)}
 // Rooms from the narrow closing are kept as they are. Rooms from the wider closing are added only where they don't overlap a room already found.
 function findRoomsMerged(g,W,H,sc){
-  const a=findRoomsInGray(prepareGray(g,W,H,1),W,H,sc);
-  const b=findRoomsInGray(prepareGray(g,W,H,2),W,H,sc);
+  const a=findRoomsInGray(prepareGray(g,W,H,2),W,H,sc);
+  const b=findRoomsInGray(prepareGray(g,W,H,1),W,H,sc);
   const acc=a.slice();
   for(const c of b){if(!acc.some(o=>bboxOverlapRatio(c,o)>0.15))acc.push(c)}
+  snapRectEdges(acc,12*sc);
   return acc.sort((p,q)=>q.w*q.h-p.w*p.h);
+}
+// Rectangles whose facing edges are within tol of each other are moved onto one shared line (rooms that share a wall).
+function snapRectEdges(rooms,tol){
+  const R=rooms.filter(r=>!r.poly);
+  for(let i=0;i<R.length;i++)for(let j=0;j<R.length;j++){if(i===j)continue;const a=R[i],b=R[j];
+    const ox=Math.min(a.x+a.w,b.x+b.w)-Math.max(a.x,b.x);
+    if(ox>0&&ox>=0.5*Math.min(a.w,b.w)){const ay=a.y+a.h,by=b.y;if(Math.abs(ay-by)>0&&Math.abs(ay-by)<=tol){const m=(ay+by)/2;a.h=m-a.y;const bb=b.y+b.h;b.y=m;b.h=bb-m}}
+    const oy=Math.min(a.y+a.h,b.y+b.h)-Math.max(a.y,b.y);
+    if(oy>0&&oy>=0.5*Math.min(a.h,b.h)){const ax=a.x+a.w,bx=b.x;if(Math.abs(ax-bx)>0&&Math.abs(ax-bx)<=tol){const m=(ax+bx)/2;a.w=m-a.x;const bw2=b.x+b.w;b.x=m;b.w=bw2-m}}
+  }
 }
 // Removes small dark marks (typed letters, eraser smudges) that are not part of the wall network.
 function removeSmallDarkMarks(wall,W,H){
