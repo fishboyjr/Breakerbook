@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>BreakerBook v39</title>
+<title>BreakerBook v40</title>
 
 <style>
 :root{color-scheme:light dark;--bg:#f5f5f3;--fg:#1d1d1f;--pn:#fff;--ln:#cfcfca;--ac:#2b6cb0}
@@ -42,7 +42,8 @@ h3{font-size:12px;text-transform:uppercase;letter-spacing:.05em;opacity:.65;marg
  .qr svg{width:.55in;height:.55in}
  .qr p{font-size:7pt;margin:2pt 0 0;text-align:right;word-break:break-all;max-width:2.2in}
  .sheet h3{font-size:11pt;opacity:1;text-transform:none;margin:8pt 0 3pt;color:#000}
- .plan{width:7.5in;height:auto;min-height:0;display:block}
+ .planwrap{break-inside:avoid;page-break-inside:avoid}
+ .plan{width:7.5in;height:6.6in;min-height:0;display:block;break-inside:avoid;page-break-inside:avoid}
  table{border-collapse:collapse;width:100%;font-size:9pt;margin:4px 0}
  td,th{border:1px solid #999;padding:2px 4px;text-align:left;vertical-align:top}
  .disc{font-size:8.5pt;margin-top:10px;border-top:1px solid #999;padding-top:4px}
@@ -64,6 +65,7 @@ body.bmode svg,body.bmode #tabs{display:none}
 .h.empty{border:2px dashed var(--ln);opacity:.6}
 .h.off{opacity:.5}
 .pr{display:grid;grid-template-columns:2fr 1fr 2fr;gap:4px;margin:4px 0}
+.bfwrap{position:sticky;top:0;z-index:3;background:var(--bg);padding-bottom:6px}
 .bf{background:var(--pn);border:1px solid var(--ac);border-radius:8px;padding:10px;margin-bottom:12px;max-width:480px;display:grid;gap:6px}
 #sdlg{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;z-index:6}
 #sdlg.open{display:flex}
@@ -95,7 +97,7 @@ textarea{width:100%;font:inherit;color:inherit;background:var(--bg);border:1px s
 .pgr{max-height:62vh;overflow:auto;padding-right:4px}
 @media(max-width:640px){.pg{grid-template-columns:1fr}.pgl{max-height:40vh}.pgr{max-height:none}}
 </style></head><body>
-<header><b>BreakerBook <span class="sm">v39</span></b>
+<header><b>BreakerBook <span class="sm">v40</span></b>
 <button data-act="open">Open file</button><button data-act="save">Save file</button><button data-act="printOpts">Print</button><button data-act="undo">Undo</button><button data-act="new">New</button>
 <input type="file" id="fIn" accept=".json,application/json" hidden><span class="sm" id="stat"></span></header>
 <main><div id="plan"><div id="tabs"></div><svg id="svg" viewBox="0 0 960 640"></svg><div id="bview"></div></div><aside id="side"></aside></main><div id="pdlg"><div class="box">
@@ -221,6 +223,8 @@ function symbol(t){
   return `<rect x="-5" y="-5" width="10" height="10" style="${st}"/>`;
 }
 
+// Panel label for devices fed from panel P2 or higher; P1 devices are not labeled.
+function dpl(d){const b=S.breakers.find(x=>x.id===d.breaker),p=b&&S.panels.find(x=>x.id===b.panel);return p&&pnum(p)!=='P1'?' · '+pnum(p):''}
 function drawPlan(){
   let h='';
   if(!S.floors.length){
@@ -247,7 +251,7 @@ function drawPlan(){
       const mark=b
         ?`<circle cx="${d.x}" cy="${d.y}" r="12" style="fill:${colorOf(b.id)}"/><text x="${d.x}" y="${d.y+3.5}" font-size="9" font-weight="bold" text-anchor="middle" style="fill:#fff">${esc(bnum(b))}</text>`
         :`<circle cx="${d.x}" cy="${d.y}" r="12" style="fill:#d33"/><text x="${d.x}" y="${d.y+5}" font-size="13" font-weight="bold" text-anchor="middle" style="fill:#fff">?</text>`;
-      h+=`<g data-kind="device" data-id="${d.id}" style="cursor:move">${ring}${mark}<g transform="translate(${d.x+26},${d.y})">${symbol(d.type)}</g><text x="${d.x+38}" y="${d.y+4}" font-size="11" style="fill:var(--fg)">${esc(d.name)}${d.gfci?' · GFCI':''}</text></g>`;
+      h+=`<g data-kind="device" data-id="${d.id}" style="cursor:move">${ring}${mark}<g transform="translate(${d.x+26},${d.y})">${symbol(d.type)}</g><text x="${d.x+38}" y="${d.y+4}" font-size="11" style="fill:var(--fg)">${esc(d.name)}${d.gfci?' · GFCI':''}${dpl(d)}</text></g>`;
     }
     if(!S.rooms.some(r=>r.floor===cur))h+='<text x="20" y="40" font-size="14" style="fill:var(--fg)">No rooms on this floor yet. Add one on the right.</text>';
   }
@@ -305,7 +309,7 @@ function sheetHTML(f){
     ${brks.length?`<table><tr><th>Breaker</th><th>Label</th><th>Panel</th><th>Rooms</th></tr>${brks.map(brkRow).join('')}</table>`:'<p>No breakers assigned on this floor.</p>'}
     ${panels.map(p=>`<p><b>${pnum(p)} ${esc(p.name)}</b>${p.room?' · '+esc((S.rooms.find(q=>q.id===p.room)||{}).name||''):''}: available slots ${avail(p).join(', ')||'none'}; unused breakers ${S.breakers.filter(b=>b.panel===p.id&&b.status==='unused').map(bnum).join(', ')||'none'}</p>`).join('')}
     <h3>Layout</h3>
-    <svg class="plan" viewBox="${floorBox(f).join(' ')}">${floorMarkup(f)}</svg>
+    <div class="planwrap"><svg class="plan" viewBox="${floorBox(f).join(' ')}">${floorMarkup(f)}</svg></div>
     <h3>Detail: every item on this floor</h3>
     ${devs.length?`<table><tr><th>Item</th><th>Type</th><th>Room</th><th>Panel</th><th>Breaker</th><th>GFCI</th><th>Critical</th></tr>${devs.map(devRow).join('')}</table>`:'<p>No items on this floor.</p>'}
     <h3>Safety on this sheet</h3>
@@ -404,8 +408,8 @@ function renderBrk(){
     return `<div class="pnl"><b>${pnum(p)} ${esc(p.name)}</b><div class="cols"><div>${odd}</div><div>${even}</div></div></div>`;
   }).join('');
   $('bview').innerHTML=`
+    ${bform?`<div class="bfwrap"><div class="bf">${bformHTML()}</div></div>`:''}
     <div class="row" style="margin-bottom:10px"><input id="bpName" placeholder="Panel name (e.g. Main)"><input id="bpTot" type="number" placeholder="Slots"><button data-act="bpAdd">Add panel</button><button data-act="photo">Import from photo</button></div>
-    ${bform?`<div class="bf">${bformHTML()}</div>`:''}
     ${cols||'<p class="sm">Add a panel to start entering breakers.</p>'}`;
 }
 // When a room grows into neighbors, push them in the direction of growth ('x' right, 'y' down).
