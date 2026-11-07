@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>BreakerBook v37</title>
+<title>BreakerBook v38</title>
 
 <style>
 :root{color-scheme:light dark;--bg:#f5f5f3;--fg:#1d1d1f;--pn:#fff;--ln:#cfcfca;--ac:#2b6cb0}
 @media(prefers-color-scheme:dark){:root{--bg:#1c1c1e;--fg:#f2f2f2;--pn:#2a2a2d;--ln:#48484c}}
 *{box-sizing:border-box}
+html,body{overscroll-behavior:none}
 body{margin:0;font:14px system-ui,sans-serif;background:var(--bg);color:var(--fg);height:100vh;display:grid;grid-template-rows:auto 1fr}
 header{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px;background:var(--pn);border-bottom:1px solid var(--ln)}
 header b{margin-right:auto}
@@ -62,7 +63,7 @@ body.bmode svg,body.bmode #tabs{display:none}
 .h b{display:block;font-size:14px}
 .h.empty{border:2px dashed var(--ln);opacity:.6}
 .h.off{opacity:.5}
-.pr{display:grid;grid-template-columns:2fr 2fr 1fr 2fr;gap:4px;margin:4px 0}
+.pr{display:grid;grid-template-columns:2fr 1fr 2fr;gap:4px;margin:4px 0}
 .bf{background:var(--pn);border:1px solid var(--ac);border-radius:8px;padding:10px;margin-bottom:12px;max-width:480px;display:grid;gap:6px}
 #sdlg{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;z-index:6}
 #sdlg.open{display:flex}
@@ -94,7 +95,7 @@ textarea{width:100%;font:inherit;color:inherit;background:var(--bg);border:1px s
 .pgr{max-height:62vh;overflow:auto;padding-right:4px}
 @media(max-width:640px){.pg{grid-template-columns:1fr}.pgl{max-height:40vh}.pgr{max-height:none}}
 </style></head><body>
-<header><b>BreakerBook <span class="sm">v37</span></b>
+<header><b>BreakerBook <span class="sm">v38</span></b>
 <button data-act="open">Open file</button><button data-act="save">Save file</button><button data-act="printOpts">Print</button><button data-act="undo">Undo</button><button data-act="new">New</button>
 <input type="file" id="fIn" accept=".json,application/json" hidden><span class="sm" id="stat"></span></header>
 <main><div id="plan"><div id="tabs"></div><svg id="svg" viewBox="0 0 960 640"></svg><div id="bview"></div></div><aside id="side"></aside></main><div id="pdlg"><div class="box">
@@ -325,6 +326,9 @@ async function buildPrint(){
 }
 // Breakers tab: each panel is drawn as a column of breaker handles, one per slot.
 let bform=null; // {panel,slot,pole,id} while entering or editing a breaker
+// Floor and room for a breaker: the room list shows only rooms on the chosen floor.
+function roomOptsFor(fl,sel){return `<option value="">No room (not on plan)</option>${S.rooms.filter(q=>q.floor===fl).map(q=>`<option value="${q.id}"${q.id===sel?' selected':''}>${esc(q.name)}</option>`).join('')}`}
+function bfFloorRoomRow(b,p){const fl=(b&&b.floor!==undefined)?b.floor:(p?p.floor:0);return `<div class="row"><select id="bfFloor">${S.floors.map((x,i)=>`<option value="${i}"${i===fl?' selected':''}>${esc(x)}</option>`).join('')}</select><select id="bfRoom">${roomOptsFor(fl,b?b.room:'')}</select></div>`}
 function bformHTML(){
   const b=bform.id?S.breakers.find(x=>x.id===bform.id):null;
   const v=b||{label:'',amps:'',type:'Standard',status:'used',feedsPanel:'',pole:bform.pole||''};
@@ -335,7 +339,7 @@ function bformHTML(){
     <div class="row"><input id="bfAmps" placeholder="Amps" value="${esc(v.amps)}"><select id="bfType">${BT.map(t=>`<option${t===v.type?' selected':''}>${t}</option>`).join('')}</select></div>
     <div class="row"><select id="bfStatus"><option value="used"${v.status!=='unused'?' selected':''}>Used</option><option value="unused"${v.status==='unused'?' selected':''}>Unused</option></select>
     <select id="bfFeeds"><option value="">Feeds no subpanel</option>${S.panels.filter(q=>q.id!==bform.panel).map(q=>`<option value="${q.id}"${q.id===v.feedsPanel?' selected':''}>Feeds ${esc(q.name)}</option>`).join('')}</select></div>
-    <div class="row"><select id="bfRoom"><option value="">No room (not on plan)</option>${S.rooms.filter(q=>q.floor===(p?p.floor:-1)).map(q=>`<option value="${q.id}"${q.id===(b?b.room:'')?' selected':''}>${esc(q.name)}</option>`).join('')}</select></div>
+    ${bfFloorRoomRow(b,p)}
     <div class="row"><button data-act="bfSave">Save</button>${b?'<button class="danger" data-act="bfDel">Delete</button>':''}${b&&b.slot2?`<button data-act="split" data-id="${b.id}">Split</button>`:''}<button data-act="bfCancel">Cancel</button></div>`;
 }
 function openWiz(){W={step:'floors',wantRooms:'0',rooms:[],panels:[],panelText:''};showWiz()}
@@ -358,7 +362,7 @@ function wizHTML(){
     const rows=W.panelRows||[{name:'',location:'',total:'',floor:S.floors[0]}];
     return `<h3 style="margin:0">Panels</h3>
       <p class="sm">Add each panel and choose the floor it is on.</p>
-      ${rows.map((r,i)=>`<div class="pr"><input data-pn="${i}" placeholder="Name (e.g. Main)" value="${esc(r.name)}"><input data-pl="${i}" placeholder="Location" value="${esc(r.location)}"><input data-pt="${i}" type="number" placeholder="Slots" value="${esc(r.total)}"><select data-pf="${i}">${S.floors.map(x=>`<option${x===r.floor?' selected':''}>${esc(x)}</option>`).join('')}</select></div>`).join('')}
+      ${rows.map((r,i)=>`<div class="pr"><input data-pn="${i}" placeholder="Name (e.g. Main)" value="${esc(r.name)}"><input data-pt="${i}" type="number" placeholder="Slots" value="${esc(r.total)}"><select data-pf="${i}">${S.floors.map(x=>`<option${x===r.floor?' selected':''}>${esc(x)}</option>`).join('')}</select></div>`).join('')}
       <div class="row"><button data-act="wizAddPanel">Add another panel</button></div>
       ${nav('Next','wizPanels')}`;
   }
@@ -367,7 +371,7 @@ function wizHTML(){
     ${nav('Finish','wizFinish')}`;
 }
 function parseRooms(t){return t.split(',').map(x=>x.trim()).filter(Boolean).map(x=>{const m=x.match(/^(.*?)\s+(\d+(?:\.\d+)?)\s*[x×]\s*(\d+(?:\.\d+)?)$/i);return m?{name:m[1].trim(),w:clamp(+m[2],1,200),h:clamp(+m[3],1,200)}:{name:x,w:10,h:10}})}
-function readPanelRows(){return Array.from(document.querySelectorAll('[data-pn]'),(el,i)=>({name:el.value.trim(),location:(document.querySelector(`[data-pl="${i}"]`)?.value||'').trim(),total:document.querySelector(`[data-pt="${i}"]`)?.value||'',floor:document.querySelector(`[data-pf="${i}"]`)?.value||''}))}
+function readPanelRows(){return Array.from(document.querySelectorAll('[data-pn]'),(el,i)=>({name:el.value.trim(),total:document.querySelector(`[data-pt="${i}"]`)?.value||'',floor:document.querySelector(`[data-pf="${i}"]`)?.value||''}))}
 function parsePanels(t){return t.split('\n').map(l=>l.split(',').map(x=>x.trim())).filter(a=>a[0]).map(a=>({name:a[0],location:a[1]||'',total:+a[2]||0,floor:a[3]||''}))}
 function parseBrk(t){return t.split('\n').map(l=>l.split(',').map(x=>x.trim())).filter(a=>a[0]).map(a=>{const m=a[0].match(/^(\d+)\s*([ABab])?$/);return m?{slot:+m[1],pole:(m[2]||'').toUpperCase(),amps:(a[1]||'').replace(/a$/i,''),funcs:a.slice(2).join(', ')}:null}).filter(Boolean)}
 function finishWiz(){
@@ -407,7 +411,7 @@ function renderBrk(){
     return `<div class="pnl"><b>${esc(p.name)}</b> <span class="sm">${esc(p.location)}</span><div class="cols"><div>${odd}</div><div>${even}</div></div></div>`;
   }).join('');
   $('bview').innerHTML=`
-    <div class="row" style="margin-bottom:10px"><input id="bpName" placeholder="Panel name (e.g. Main)"><input id="bpLoc" placeholder="Location"><input id="bpTot" type="number" placeholder="Slots"><button data-act="bpAdd">Add panel</button><button data-act="photo">Import from photo</button></div>
+    <div class="row" style="margin-bottom:10px"><input id="bpName" placeholder="Panel name (e.g. Main)"><input id="bpTot" type="number" placeholder="Slots"><button data-act="bpAdd">Add panel</button><button data-act="photo">Import from photo</button></div>
     ${bform?`<div class="bf">${bformHTML()}</div>`:''}
     ${cols||'<p class="sm">Add a panel to start entering breakers.</p>'}`;
 }
@@ -711,10 +715,11 @@ function vDel(id){
 let undoStack=[],lastSnap=null;
 const snapKey=()=>{const {updated,...rest}=S;return JSON.stringify(rest)};
 // A breaker is placed in its room, like a small box in the middle of the room.
-function placeBrk(b){const r=S.rooms.find(x=>x.id===b.room);if(!r){b.x=null;b.y=null;b.floor=undefined;return}const n=S.breakers.filter(x=>x.room===r.id&&x.x!=null&&x.id!==b.id).length,bb=roomBox(r);b.floor=r.floor;b.x=Math.round(bb.x+20+(n%3)*70);b.y=Math.round(bb.y+30+Math.floor(n/3)*34)}
+function placeBrk(b){const r=S.rooms.find(x=>x.id===b.room);if(!r){b.x=null;b.y=null;return}const n=S.breakers.filter(x=>x.room===r.id&&x.x!=null&&x.id!==b.id).length,bb=roomBox(r);b.floor=r.floor;b.x=Math.round(bb.x+20+(n%3)*70);b.y=Math.round(bb.y+30+Math.floor(n/3)*34)}
 function newFile(){S=blank();VW=960;VH=640;undoStack=[];lastSnap=null;cur=0;sel=null;bform=null;dirty=false;currentName='breakerbook';setStat('New file. Save to keep it.');render()}
 function maybeSetup(){if(!S.setupDone&&!S.floors.length&&!$('sdlg').classList.contains('open'))openWiz()}
 function render(){
+  try{localStorage.setItem('breakerbook-draft',JSON.stringify(S))}catch(e){}
   S.devices.forEach(d=>{if(d.ctrl){const c=S.devices.find(x=>x.id===d.ctrl);if(!c||!d.breaker||c.breaker!==d.breaker)d.ctrl=''}});
   const key=snapKey();
   if(lastSnap!==null&&key!==lastSnap){undoStack.push(lastSnap);if(undoStack.length>50)undoStack.shift()}
@@ -760,7 +765,7 @@ document.addEventListener('click',e=>{
   else if(a==='bfCancel'){bform=null;changed=false}
   else if(a==='bfSave'){
     const amps=$('bfAmps').value.trim().replace(/a$/i,'');
-    const vals={label:$('bfLabel').value.trim(),amps,type:$('bfType').value,status:$('bfStatus').value,feedsPanel:$('bfFeeds').value,room:$('bfRoom')?.value||''};
+    const vals={label:$('bfLabel').value.trim(),amps,type:$('bfType').value,status:$('bfStatus').value,feedsPanel:$('bfFeeds').value,floor:+($('bfFloor')?.value||0),room:$('bfRoom')?.value||''};
     if(bform.id){const t=S.breakers.find(x=>x.id===bform.id),old=t.room;Object.assign(t,vals);if(old!==t.room)placeBrk(t)}
     else if(!S.floors.length)alert('Create your floors first, in the Floors mode.');
     else{const nb={id:uid('b'),panel:bform.panel,slot:bform.slot,slot2:bform.slot2,pole:bform.pole,...vals};S.breakers.push(nb);placeBrk(nb)}
@@ -778,7 +783,7 @@ document.addEventListener('click',e=>{
     else if(!n){setStat('Enter a panel name.');changed=false}
     else{
       const cnt=S.panels.filter(q=>q.floor===cur).length;
-      const p={id:uid('p'),name:n,location:$('bpLoc').value.trim(),total:+$('bpTot').value||0,floor:cur,x:VW-PW-20,y:20+cnt*(PH+12)};
+      const p={id:uid('p'),name:n,location:'',total:+$('bpTot').value||0,floor:cur,x:VW-PW-20,y:20+cnt*(PH+12)};
       clampPanel(p);S.panels.push(p);
     }
   }
@@ -938,6 +943,7 @@ document.addEventListener('click',e=>{
 });
 
 document.addEventListener('change',e=>{
+  if(e.target.id==='bfFloor'){$('bfRoom').innerHTML=roomOptsFor(+e.target.value,'');return}
   if(e.target.id==='skFile'){
     const f=e.target.files[0];e.target.value='';
     if(f){const img=new Image();img.onload=()=>{sk.img=img;sk.pts=[];skStage('scale')};img.src=URL.createObjectURL(f)}
@@ -1029,5 +1035,6 @@ const endDrag=()=>{
 svg.addEventListener('pointerup',endDrag);
 svg.addEventListener('pointercancel',endDrag);
 
+try{const d=localStorage.getItem('breakerbook-draft');if(d){S=Object.assign(blank(),JSON.parse(d));dirty=true;setStat('Restored unsaved work.')}}catch(e){}
 render();
 </script></body></html>
