@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>BreakerBook v54</title>
+<title>BreakerBook v55</title>
 
 <style>
 :root{color-scheme:light dark;--bg:#f0f3f7;--pn:#fff;--bgi:#f4f6f9;--fg:#1b2733;--mut:#64748b;--ln:#dfe5ec;--ac:#0b7fc0;--act:#fff;--ac2:#e3f1fb;--wall:#8795a5;--rf:rgba(11,127,192,.05);--rfs:rgba(11,127,192,.13);--sh:0 1px 2px rgba(16,24,40,.05),0 2px 10px rgba(16,24,40,.05);--r:14px}
@@ -147,8 +147,22 @@ header{position:sticky;top:0;z-index:4}
 .nr{color:#d33;font-weight:600;font-size:12px;margin:2px 0}
 @media(prefers-color-scheme:dark){.nr{color:#ff7b72}}
 .pri{background:var(--ac);color:var(--act);border-color:var(--ac)}
+#sdlg .box{width:min(94vw,460px);max-height:92vh;overflow:auto}
+#sdlg .pr{grid-template-columns:1fr 1fr;gap:6px}
+#sdlg .pr input{grid-column:1/-1}
+#sdlg .pr select{min-width:0;width:100%;text-overflow:ellipsis}
+.phimgs{display:flex;gap:6px;margin-bottom:4px}
+.phimgs .phimg{flex:none;width:calc(50% - 3px);height:auto;max-height:none;margin:0}
+.phimg{max-height:120px}
+.tier{font-size:12px;font-weight:600;margin:2px 0}
+.tier.ok{color:#1a7f37}.tier.mid{color:#b7791f}
+@media(prefers-color-scheme:dark){.tier.ok{color:#56d364}.tier.mid{color:#e3b341}}
+.skrow.joined .skmain>*:not(.jn):not(.phimgs){opacity:.45}
+.skrow.joined .jn{display:block}
+#phdlg #skc.fit{display:block;margin:0 auto;width:auto;max-width:100%;max-height:calc(100vh - 280px);min-height:140px}
+.skrev .pgr{max-height:calc(100vh - 230px)}.skrev .skrow{padding:5px 0}
 </style></head><body>
-<header><div class="brand"><span class="logo"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M13.2 2 4.5 13.4h5.6L9 22l9.5-12h-5.8L13.2 2Z"/></svg></span><b>BreakerBook</b><span class="tag">Map your home's electrical system</span><span class="ver">v54</span></div>
+<header><div class="brand"><span class="logo"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M13.2 2 4.5 13.4h5.6L9 22l9.5-12h-5.8L13.2 2Z"/></svg></span><b>BreakerBook</b><span class="tag">Map your home's electrical system</span><span class="ver">v55</span></div>
 <div class="acts"><button data-act="open">Open file</button><button data-act="printOpts">Print</button><button data-act="undo">Undo</button><button data-act="new">New</button><button data-act="save">Save file</button></div>
 <nav class="seg" id="modes"></nav>
 <input type="file" id="fIn" accept=".json,application/json" hidden><span id="stat"></span></header>
@@ -184,7 +198,7 @@ header{position:sticky;top:0;z-index:4}
 <input type="file" id="phFile" accept="image/*" hidden>
 <input type="file" id="skFile" accept="image/*" hidden>
 <datalist id="roomNames"></datalist><datalist id="brkWords"></datalist>
-<div id="splash"><div class="spl-logo"><svg viewBox="0 0 24 24" width="52" height="52" fill="currentColor"><path d="M13.2 2 4.5 13.4h5.6L9 22l9.5-12h-5.8L13.2 2Z"/></svg></div><h1>BreakerBook</h1><p>Map your home's electrical system</p><span class="spl-ver">Version 54</span><div class="spl-hint">Tap anywhere to begin</div></div>
+<div id="splash"><div class="spl-logo"><svg viewBox="0 0 24 24" width="52" height="52" fill="currentColor"><path d="M13.2 2 4.5 13.4h5.6L9 22l9.5-12h-5.8L13.2 2Z"/></svg></div><h1>BreakerBook</h1><p>Map your home's electrical system</p><span class="spl-ver">Version 55</span><div class="spl-hint">Tap anywhere to begin</div></div>
 <div id="print"></div>
 <script>
 const DT=['Outlet','Switch','Light','Fan','Fixture','Other'];
@@ -378,7 +392,7 @@ function sheetHTML(f){
 }
 async function buildPrint(){
   const standalone=window.navigator.standalone||matchMedia('(display-mode: standalone)').matches;
-  if(standalone){alert('Printing does not work from the Home Screen version of BreakerBook on iPad. Open the BreakerBook web address in Safari to print.');return}
+  if(standalone){alert('Printing does not work from the Home Screen version of BreakerBook on this device. Open the BreakerBook web address in Safari to print.');return}
   try{if(typeof qrcode==='undefined')await loadScript('https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js')}catch(e){}
   $('print').innerHTML=S.floors.length?S.floors.map((n,i)=>sheetHTML(i)).join(''):'<p>Add a floor first.</p>';
   window.print();
@@ -583,7 +597,7 @@ let pendingYes=null;
 function askConfirm(msg,fn){pendingYes=fn;$('cmsg').textContent=msg;$('cdlg').classList.add('open')}
 // Outside libraries load only when needed (printing, for the QR code).
 function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=()=>rej(new Error('load failed'));document.head.appendChild(s)})}
-// Photo import (v53): two photo types. The person taps the four corners of the area, the app straightens it,
+// Photo import (v55): two photo types. The person taps the four corners of the area, the app straightens it,
 // cuts it into rows, and suggests amps (panel photo) or labels (written list). Every row is shown beside its crop to confirm.
 let phPending=null,phCtx={done:{panel:false,list:false},panel:null,kind:'panel',wiz:false,img:null,src:null,pts:[],cols:2,numbering:'pairs',slots:24,note:'',rect:null,rows:[]};
 const AMP_WORDS=['15','20','25','30','35','40','45','50','60','70','80','90','100','110','125','150','175','200'];
@@ -758,12 +772,34 @@ function phBuildRows(){
     const g=new Float32Array(w*h);
     for(let y=0;y<h;y++)for(let x=0;x<w;x++)g[y*w+x]=r.g[Math.max(0,Math.min(r.H-1,y0+y))*r.W+x0+x];
     let read=null;
-    try{read=phCtx.kind==='panel'?readAmps(g,w,h):readListRow(g,w,h)}catch(e){read=null}
-    const cv=document.createElement('canvas'),k=Math.min(1,300/w);cv.width=Math.round(w*k);cv.height=Math.round(h*k);
-    cv.getContext('2d').drawImage(r.cv,x0,y0,w,h,0,0,cv.width,cv.height);
-    rows.push({slot,col,i,read,crop:cv.toDataURL('image/jpeg',0.7),next:slotFor(i+1,col,R,cols,phCtx.numbering),hasNext:i+1<R});
+    try{read=phCtx.kind==='panel'?readAmpsTier(g,w,h):readListRow(g,w,h)}catch(e){read=null}
+    const cv=document.createElement('canvas'),k=Math.min(1,300/w);
+    let crop2='';
+    if(phCtx.kind==='list'){
+      // taller crop: handwriting often spills over the ruled lines
+      const pad=Math.round(h*.3),sy=Math.max(0,y0-pad),sh=Math.min(r.H,y0+h+Math.round(h*.2))-sy;
+      cv.width=Math.round(w*k);cv.height=Math.round(sh*k);
+      cv.getContext('2d').drawImage(r.cv,x0,sy,w,sh,0,0,cv.width,cv.height);
+    }else{
+      cv.width=Math.round(w*k);cv.height=Math.round(h*k);
+      cv.getContext('2d').drawImage(r.cv,x0,y0,w,h,0,0,cv.width,cv.height);
+      try{crop2=grayToUrl(enhanceGray(g,w,h),w,h,cv.width)}catch(e){}
+    }
+    rows.push({slot,col,i,read,crop:cv.toDataURL('image/jpeg',0.75),crop2,next:slotFor(i+1,col,R,cols,phCtx.numbering),hasNext:i+1<R});
   }
   rows.sort((a,b)=>a.slot-b.slot);
+  if(phCtx.kind==='panel'){
+    const ties=detectTies(r,cols,ph,rh,R);
+    // a breaker spans exactly two rows, so a row already joined to the one above cannot start another joined pair
+    for(let c=0;c<cols;c++){
+      let prev=false;
+      rows.filter(x=>x.col===c).sort((a,b)=>a.i-b.i).forEach(x=>{
+        const raw=!!(ties[c]&&ties[c][x.i]&&x.hasNext);
+        x.joined=prev;x.tie=raw&&!prev;prev=x.tie;
+      });
+    }
+  }
+  rows.forEach(x=>{x.nextIdx=rows.findIndex(y=>y.slot===x.next)});
   phCtx.rows=rows;
 }
 function phProcess(){
@@ -781,7 +817,7 @@ function phStage(stage){
   const kindName=phCtx.kind==='panel'?'panel photo (amps)':'written list (labels)';
   if(stage==='pick'){
     box.innerHTML=`<h3 style="margin:0">Import breakers from a photo</h3>
-      <p class="sm">The photo stays on this iPad and is not uploaded. Use either photo or both: the panel photo gives the amps and the written list gives the labels. They are combined by slot number.${phCtx.msg?` <b>${esc(phCtx.msg)}</b>`:''}</p>
+      <p class="sm">The photo stays on this device and is not uploaded. Use either photo or both: the panel photo gives the amps and the written list gives the labels. They are combined by slot number.${phCtx.msg?` <b>${esc(phCtx.msg)}</b>`:''}</p>
       ${phCtx.panel&&phCtx.wiz?`<p class="sm"><b>${esc(phCtx.panel.name)}</b></p>`:`<select id="phPanel">${S.panels.map(p=>`<option value="${p.id}"${phCtx.panel&&phCtx.panel.id===p.id?' selected':''}>${esc(p.name)}</option>`).join('')}</select>`}
       <button class="opt" data-act="phType" data-v="panel"><b>${phCtx.done.panel?'&#10003; ':''}Photo of the panel</b><span>Door open. Reads the amps printed on the breaker handles.</span></button>
       <button class="opt" data-act="phType" data-v="list"><b>${phCtx.done.list?'&#10003; ':''}Photo of the written list</b><span>Usually inside the door. Reads the labels beside each number.</span></button>
@@ -806,10 +842,13 @@ function phStage(stage){
         const rd=r.read;
         if(isP){
           const sure=rd&&rd.sure?rd.top[0]:'';
-          const chips=(rd?rd.top:[]).concat(['15','20','30','40','50']).filter((v,j,a)=>a.indexOf(v)===j).slice(0,6);
-          return `<div class="skrow"><span class="sn">${r.slot}</span><div class="skmain"><img class="phimg" src="${r.crop}" alt="Row ${r.slot}">
-            <div class="row"><input data-pa="${i}" type="number" inputmode="numeric" placeholder="Amps" value="${esc(sure)}" style="flex:1"><label class="sm" style="flex:2;white-space:nowrap"><input type="checkbox" data-p2="${i}" style="width:auto"> 2-pole (also uses slot ${r.next})</label></div>
-            ${sure?'':'<div class="nr">Not recognized: tap the amps below or type them</div>'}
+          const chips=(rd?rd.chips||rd.top:[]).concat(['15','20','30','40','50']).filter((v,j,a)=>a.indexOf(v)===j).slice(0,6);
+          const tier=rd?rd.tier:'none';
+          const badge=tier==='confirmed'?`<div class="tier ok">Confirmed ${rd.pct}%</div>`:tier==='probable'?`<div class="tier mid">Probable ${rd.pct}%: please check</div>`:`<div class="nr">Not recognized${rd&&rd.disagree?' (readings disagree)':''}: tap the amps below or type them</div>`;
+          return `<div class="skrow${r.joined?' joined':''}" id="phr${i}"><span class="sn">${r.slot}</span><div class="skmain"><div class="phimgs"><img class="phimg" src="${r.crop}" alt="Row ${r.slot}">${r.crop2?`<img class="phimg" src="${r.crop2}" alt="Row ${r.slot}, brightened">`:''}</div>
+            ${r.joined?`<div class="jn sm">Joined to the breaker above (2-pole). Untick 2-pole on that row if this is wrong.</div>`:'<div class="jn sm" style="display:none">Joined to the breaker above (2-pole).</div>'}
+            ${badge}
+            <div class="row"><input data-pa="${i}" type="number" inputmode="numeric" placeholder="Amps" value="${esc(sure)}" style="flex:1"><label class="sm" style="flex:2;white-space:nowrap"><input type="checkbox" data-p2="${i}" style="width:auto"${r.tie?' checked':''}> 2-pole (also uses slot ${r.next})${r.tie?' <b>(joined handle seen)</b>':''}</label></div>
             <div class="skhint">${chips.map(v=>`<button class="tg" data-act="phAmp" data-i="${i}" data-v="${v}">${v}A</button>`).join('')}</div></div></div>`;
         }
         const val=rd&&rd.sure?rd.text:'';
@@ -882,10 +921,12 @@ function applyGuide(){
   phCtx.rows.forEach((r,i)=>{
     if(used.has(r.slot))return;
     if(isP){
-      const amps=(document.querySelector(`[data-pa="${i}"]`)?.value||'').trim().replace(/a$/i,'');
+      let amps=(document.querySelector(`[data-pa="${i}"]`)?.value||'').trim().replace(/a$/i,'');
+      const two=document.querySelector(`[data-p2="${i}"]`)?.checked&&r.hasNext;
+      if(!amps&&two&&r.nextIdx>=0)amps=(document.querySelector(`[data-pa="${r.nextIdx}"]`)?.value||'').trim().replace(/a$/i,'');
       if(!amps)return;
       const b={slot:r.slot,pole:'',amps,funcs:''};
-      if(document.querySelector(`[data-p2="${i}"]`)?.checked&&r.hasNext){b.slot2=r.next;used.add(r.next)}
+      if(two){b.slot2=r.next;used.add(r.next)}
       items.push(b);
     }else{
       const label=(document.querySelector(`[data-pl="${i}"]`)?.value||'').trim();
@@ -924,28 +965,106 @@ function readAmps(g,w,h){
   return best;
 }
 
+// ---- v55: enhanced crops, joined-handle (two-pole) detection, two-pass amp reading with confidence tiers ----
+function localMean(g,W,H,R){
+  const integ=new Float64Array((W+1)*(H+1));
+  for(let y=0;y<H;y++){let row=0;for(let x=0;x<W;x++){row+=g[y*W+x];integ[(y+1)*(W+1)+x+1]=integ[y*(W+1)+x+1]+row}}
+  const m=new Float32Array(W*H);
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+    const x0=Math.max(0,x-R),x1=Math.min(W-1,x+R),y0=Math.max(0,y-R),y1=Math.min(H-1,y+R);
+    m[y*W+x]=(integ[(y1+1)*(W+1)+x1+1]-integ[y0*(W+1)+x1+1]-integ[(y1+1)*(W+1)+x0]+integ[y0*(W+1)+x0])/((x1-x0+1)*(y1-y0+1));
+  }
+  return m;
+}
+// Local contrast boost: small, dim markings stand out from their surroundings.
+function enhanceGray(g,w,h){
+  const m=localMean(g,w,h,Math.max(6,Math.round(h*.3))),o=new Float32Array(w*h);
+  for(let i=0;i<o.length;i++)o[i]=Math.max(0,Math.min(255,128+(g[i]-m[i])*2.6));
+  return o;
+}
+function upGray(g,w,h,k){
+  const W=w*k,H=h*k,o=new Float32Array(W*H);
+  for(let y=0;y<H;y++){const sy=Math.min(h-1.001,y/k),y0=Math.floor(sy),fy=sy-y0;
+    for(let x=0;x<W;x++){const sx=Math.min(w-1.001,x/k),x0=Math.floor(sx),fx=sx-x0;
+      o[y*W+x]=(g[y0*w+x0]*(1-fx)+g[y0*w+x0+1]*fx)*(1-fy)+(g[(y0+1)*w+x0]*(1-fx)+g[(y0+1)*w+x0+1]*fx)*fy}}
+  return o;
+}
+function grayToUrl(g,w,h,outW){
+  const cv=document.createElement('canvas');cv.width=w;cv.height=h;
+  const x=cv.getContext('2d'),im=x.createImageData(w,h);
+  for(let i=0;i<g.length;i++){im.data[i*4]=im.data[i*4+1]=im.data[i*4+2]=g[i];im.data[i*4+3]=255}
+  x.putImageData(im,0,0);
+  if(outW<w){const c2=document.createElement('canvas'),k=outW/w;c2.width=outW;c2.height=Math.round(h*k);c2.getContext('2d').drawImage(cv,0,0,c2.width,c2.height);return c2.toDataURL('image/jpeg',0.75)}
+  return cv.toDataURL('image/jpeg',0.75);
+}
+// A two-pole breaker has one handle bar that crosses the gap between two rows. Looks for a narrow bright bar on the handle side.
+function detectTies(r,cols,ph,rh,n){
+  const out=[];
+  if(cols!==2)return out;
+  const cw=Math.floor(r.W/2);
+  for(let col=0;col<2;col++){
+    out[col]=[];
+    for(let k=1;k<n;k++){
+      const y=Math.round(ph+k*rh);let tie=false;
+      if(y>4&&y<r.H-5){
+        const e=new Float32Array(cw);
+        for(let x=0;x<cw;x++){let t=0;for(let dy=-3;dy<=3;dy++)t+=r.g[(y+dy)*r.W+col*cw+x];e[x]=t/7}
+        const med=[...e].sort((a,b)=>a-b)[cw>>1],lo=col===0?0.4*cw:0,hi=col===0?cw:0.6*cw;
+        let cur=0,x0=0;
+        for(let x=0;x<=cw;x++){
+          if(x<cw&&e[x]>med+26){if(!cur)x0=x;cur++}
+          else if(cur){const wd=cur;if(wd>=0.07*cw&&wd<=0.22*cw&&x0>0.04*cw&&x0+wd<0.96*cw&&x0>=lo-2&&x0+wd<=hi+2)tie=true;cur=0}
+        }
+      }
+      out[col][k-1]=tie;
+    }
+  }
+  return out;
+}
+// Two passes (as photographed, and enlarged with boosted contrast). Agreement gives Confirmed; one pass gives Probable.
+function readAmpsTier(g,w,h){
+  const A=readAmps(g,w,h);
+  let B=null;
+  try{B=readAmps(enhanceGray(upGray(g,w,h,2),w*2,h*2),w*2,h*2)}catch(e){}
+  const okA=A&&A.sure,okB=B&&B.sure;
+  const chips=[...new Set([].concat(A?A.top:[],B?B.top:[]))].slice(0,5);
+  const pctOf=sc=>Math.max(5,Math.min(99,Math.round(100*(1+sc/0.7))));
+  if(okA&&okB&&A.top[0]===B.top[0])return {top:A.top,chips,tier:'confirmed',pct:Math.min(99,pctOf(Math.max(A.score,B.score))+10),sure:true};
+  if(okA&&okB)return {top:chips,chips,tier:'none',pct:0,sure:false,disagree:true};
+  if(okA||okB){const R=okA?A:B;return {top:R.top,chips,tier:'probable',pct:Math.min(80,pctOf(R.score)),sure:true}}
+  return {top:chips,chips,tier:'none',pct:0,sure:false};
+}
+function phJoin(i,on){
+  const r=phCtx.rows[i];if(!r)return;
+  const j=r.nextIdx;if(j<0)return;
+  const el=$('phr'+j);if(!el)return;
+  el.classList.toggle('joined',on);
+  const note=el.querySelector('.jn');if(note)note.style.display=on?'block':'none';
+}
+
 // Sketch import (Floors mode): finds closed room outlines in a photo of a hand-drawn plan.
-// OpenCV.js loads once, the first time this is used. Detection runs on this iPad.
+// OpenCV.js loads once, the first time this is used. Detection runs on this device.
 let sk={mode:'pick',img:null,pts:[],k:0,cands:[]};
 function skStage(stage){
   sk.mode=stage;
   const box=$('phbox');
   box.classList.toggle('wide',stage!=='pick');
   if(stage==='pick')box.innerHTML=`<h3 style="margin:0">Import rooms from a sketch</h3>
-    <p class="sm">Photograph your hand-drawn plan straight down, in good light. Walls must form closed shapes. The photo stays on this iPad.</p>
+    <p class="sm">Photograph your hand-drawn plan straight down, in good light. Walls must form closed shapes. The photo stays on this device.</p>
     <div class="row"><button data-act="skChoose">Choose photo</button><button data-act="phCancel">Cancel</button></div>`;
   else if(stage==='scale')box.innerHTML=`<h3 style="margin:0">Set the scale</h3>
     <p class="sm">Tap both ends of a wall you have measured, then type its length in feet. Points tapped: ${sk.pts.length} of 2.</p>
-    <canvas id="skc" style="width:100%;touch-action:none;border:1px solid var(--ln)"></canvas>
-    <p id="skMsg" class="sm"></p>
-    <div class="row"><input id="skFt" type="number" placeholder="Length in feet"><button data-act="skDetect">Find rooms</button><button data-act="phCancel">Cancel</button></div>`;
+    <div class="row"><input id="skFt" type="number" placeholder="Length in feet"><button data-act="skDetect">Find rooms</button><button data-act="phCancel">Cancel</button></div>
+    <p id="skMsg" class="sm" style="margin:0"></p>
+    <canvas id="skc" class="fit" style="touch-action:none;border:1px solid var(--ln);border-radius:10px"></canvas>`;
   else{
     const nRead=sk.cands.filter(c=>c.read).length;
     box.innerHTML=`<h3 style="margin:0">Check the rooms found</h3>
-    <p class="sm">Uncheck any outline that isn't a room. ${nRead?'Names were read from your handwriting and can be wrong: check each one, or tap a suggestion. Your corrections teach the reader.':'Name the rest.'} Sizes come from the scale.</p>
-    <canvas id="skc" style="width:100%;border:1px solid var(--ln);border-radius:10px"></canvas>
-    ${sk.cands.map((c,i)=>`<div class="skrow"><input type="checkbox" data-ck="${i}" checked><span class="sn">${i+1}</span><div class="skmain"><div class="row"><input data-nm="${i}" list="roomNames" placeholder="Room name" value="${esc(c.pre||'')}" style="flex:2"><span class="sm" style="flex:1;white-space:nowrap">${c.wf} × ${c.hf} ft</span></div>${c.read?`<div class="skhint">${c.read.crop?`<img src="${c.read.crop}" alt="Handwriting from the photo">`:''}${c.read.chips.map(n=>`<button class="tg" data-act="skPick" data-i="${i}" data-v="${esc(n)}">${esc(n)}</button>`).join('')}</div>`:''}</div></div>`).join('')||'<p class="sm">No rooms were found. Try a clearer, straighter photo.</p>'}
-    <div class="row"><button data-act="skAdd">Add rooms</button><button data-act="phCancel">Cancel</button></div>`;
+    <p class="sm" style="margin:0">Uncheck any outline that isn't a room. ${nRead?'Names were read from your handwriting and can be wrong: check each one.':''} Sizes come from the scale.</p>
+    <div class="row"><button data-act="skAdd">Add rooms</button><button data-act="phCancel">Cancel</button></div>
+    <div class="pg skrev"><div class="pgl"><canvas id="skc" style="width:100%;display:block"></canvas></div><div class="pgr">
+    ${sk.cands.map((c,i)=>`<div class="skrow"><input type="checkbox" data-ck="${i}" checked><span class="sn">${i+1}</span><div class="skmain"><div class="row"><input data-nm="${i}" list="roomNames" placeholder="Room name" value="${esc(c.pre||'')}" style="flex:2"><span class="sm" style="flex:1;white-space:nowrap">${c.wf} × ${c.hf} ft</span></div>${c.pre?'':`<div class="nr">${c.read?'Not sure of this name: tap a suggestion or type it':'Name not recognized: type it'}</div>`}${c.read?`<div class="skhint">${c.read.crop?`<img src="${c.read.crop}" alt="Handwriting from the photo">`:''}${c.read.chips.map(n=>`<button class="tg" data-act="skPick" data-i="${i}" data-v="${esc(n)}">${esc(n)}</button>`).join('')}</div>`:''}</div></div>`).join('')||'<p class="sm">No rooms were found. Try a clearer, straighter photo.</p>'}
+    </div></div>`;
   }
   drawSk();
 }
@@ -1691,6 +1810,7 @@ document.addEventListener('click',e=>{
   else if(a==='wizFinish'){finishWiz();return}
   else if(a==='tandem'){
     const p=S.panels.find(x=>x.id===t.dataset.panel),n=+t.dataset.slot;
+    if(S.breakers.some(b=>b.panel===p.id&&b.slot2&&(b.slot===n||b.slot2===n))){changed=false;return}
     p.tandem=p.tandem||{};
     if(p.tandem[n]){
       if(S.breakers.some(b=>b.panel===p.id&&b.slot===n&&b.pole==='B')){setStat('Remove the B breaker before making this slot single.');changed=false}
@@ -1828,8 +1948,9 @@ document.addEventListener('change',e=>{
     return;
   }
   if(e.target.id==='phFile'){const f=e.target.files[0];e.target.value='';if(f)phLoad(f);return}
+  if(e.target.dataset&&e.target.dataset.p2!==undefined){phJoin(+e.target.dataset.p2,e.target.checked);return}
   if(e.target.id==='phCols'){phCtx.cols=+e.target.value;return}
-  if(e.target.id==='phSlots'){phCtx.slots=clamp(+e.target.value||24,2,84);phBuildRows();phStage('rows');return}
+  if(e.target.id==='phSlots'){phCtx.slots=clamp(+e.target.value||24,2,84);phCtx.rowPh=0;phBuildRows();phStage('rows');return}
   if(e.target.id==='phNum'){phCtx.numbering=e.target.value;phBuildRows();phStage('rows');return}
   if(e.target.dataset&&e.target.dataset.pf!==undefined){const rows=readPanelRows();rows[+e.target.dataset.pf].room='';W.panelRows=rows;showWiz();return}
   if(e.target.dataset&&e.target.dataset.fl!==undefined){
