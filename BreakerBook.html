@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>BreakerBook v43</title>
+<title>BreakerBook v45</title>
 
 <style>
 :root{color-scheme:light dark;--bg:#f5f5f3;--fg:#1d1d1f;--pn:#fff;--ln:#cfcfca;--ac:#2b6cb0}
@@ -97,7 +97,7 @@ textarea{width:100%;font:inherit;color:inherit;background:var(--bg);border:1px s
 .pgr{max-height:62vh;overflow:auto;padding-right:4px}
 @media(max-width:640px){.pg{grid-template-columns:1fr}.pgl{max-height:40vh}.pgr{max-height:none}}
 </style></head><body>
-<header><b>BreakerBook <span class="sm">v43</span></b>
+<header><b>BreakerBook <span class="sm">v45</span></b>
 <button data-act="open">Open file</button><button data-act="save">Save file</button><button data-act="printOpts">Print</button><button data-act="undo">Undo</button><button data-act="new">New</button>
 <input type="file" id="fIn" accept=".json,application/json" hidden><span class="sm" id="stat"></span></header>
 <main><div id="plan"><div id="tabs"></div><svg id="svg" viewBox="0 0 960 640"></svg><div id="bview"></div></div><aside id="side"></aside></main><div id="pdlg"><div class="box">
@@ -553,15 +553,6 @@ function applyGuide(){
 // Sketch import (Floors mode): finds closed room outlines in a photo of a hand-drawn plan.
 // OpenCV.js loads once, the first time this is used. Detection runs on this iPad.
 let sk={mode:'pick',img:null,pts:[],k:0,cands:[]};
-async function loadCV(){
-  if(window.cvReady)return;
-  // Try a version-pinned npm mirror first, then the official OpenCV site.
-  if(!(window.cv&&cv.Mat))await loadScript('https://cdn.jsdelivr.net/npm/@techstark/opencv-js@4.10.0-release.1/dist/opencv.js').catch(()=>loadScript('https://docs.opencv.org/4.10.0/opencv.js'));
-  if(window.cv&&typeof cv.then==='function')window.cv=await cv;
-  // OpenCV.js finishes starting up after its script loads; wait until its functions are ready.
-  await new Promise((res,rej)=>{const t0=Date.now();const check=()=>{if(window.cv&&cv.Mat)res();else if(Date.now()-t0>180000)rej(new Error('the room finder did not start within three minutes'));else setTimeout(check,200)};check()});
-  window.cvReady=true;
-}
 function skStage(stage){
   sk.mode=stage;
   const box=$('phbox');
@@ -604,49 +595,92 @@ function skTap(e){
   sk.pts.push({x:(e.clientX-r.left)*c.width/r.width,y:(e.clientY-r.top)*c.height/r.height});
   skStage('scale');
 }
-// Finds light areas enclosed by dark lines and keeps the ones that look like rectangles.
-function detectRooms(canvas){
-  const src=cv.imread(canvas),gray=new cv.Mat(),bin=new cv.Mat(),cnts=new cv.MatVector(),hier=new cv.Mat();
-  cv.cvtColor(src,gray,cv.COLOR_RGBA2GRAY);
-  cv.adaptiveThreshold(gray,bin,255,cv.ADAPTIVE_THRESH_GAUSSIAN_C,cv.THRESH_BINARY,31,10);
-  cv.findContours(bin,cnts,hier,cv.RETR_LIST,cv.CHAIN_APPROX_SIMPLE);
-  const W=canvas.width,H=canvas.height,out=[];
-  for(let i=0;i<cnts.size();i++){
-    const c=cnts.get(i),r=cv.boundingRect(c),box=r.width*r.height,fill=cv.contourArea(c)/(box||1);
-    if(box/(W*H)>0.01&&box/(W*H)<0.6&&r.width>20&&r.height>20){
-      const ap=new cv.Mat();cv.approxPolyDP(c,ap,0.015*cv.arcLength(c,true),true);
-      const poly=[];for(let j=0;j<ap.rows;j++)poly.push({x:ap.data32S[j*2],y:ap.data32S[j*2+1]});
-      out.push({x:r.x,y:r.y,w:r.width,h:r.height,poly});ap.delete();
+function skMsg(t){const el=$('skMsg');if(el)el.textContent=t;else setStat(t)}
+// Room finder without any download: finds light areas enclosed by dark walls.
+function otsuThreshold(g){const hist=new Array(256).fill(0);for(let i=0;i<g.length;i++)hist[g[i]]++;const total=g.length;let sum=0;for(let t=0;t<256;t++)sum+=t*hist[t];let sumB=0,wB=0,best=-1,thr=128;for(let t=0;t<256;t++){wB+=hist[t];if(!wB)continue;const wF=total-wB;if(!wF)break;sumB+=t*hist[t];const mB=sumB/wB,mF=(sum-sumB)/wF,between=wB*wF*(mB-mF)*(mB-mF);if(between>best){best=between;thr=t}}return thr}
+function labelLightAreas(mask,W,H){const lab=new Int32Array(W*H);const comps=[];const stack=new Int32Array(W*H);let n=0;for(let i=0;i<W*H;i++){if(!mask[i]||lab[i])continue;n++;let sp=0;stack[sp++]=i;lab[i]=n;const pix=[];while(sp){const p=stack[--sp];pix.push(p);const x=p%W,y=(p-x)/W;if(x>0&&mask[p-1]&&!lab[p-1]){lab[p-1]=n;stack[sp++]=p-1}if(x<W-1&&mask[p+1]&&!lab[p+1]){lab[p+1]=n;stack[sp++]=p+1}if(y>0&&mask[p-W]&&!lab[p-W]){lab[p-W]=n;stack[sp++]=p-W}if(y<H-1&&mask[p+W]&&!lab[p+W]){lab[p+W]=n;stack[sp++]=p+W}}comps.push(pix)}return comps}
+const MOORE=[[1,0],[1,1],[0,1],[-1,1],[-1,0],[-1,-1],[0,-1],[1,-1]];
+// Walks around the outer edge of a region (Moore neighbour tracing), starting from its top-left pixel.
+function traceOutline(inC,W,H,start){const sx=start%W,sy=(start-sx)/W;let x=sx,y=sy,b=4;const out=[[x,y]];for(let guard=0;guard<W*H*4;guard++){let found=-1;for(let i=0;i<8;i++){const d=(b+i)%8,nx=x+MOORE[d][0],ny=y+MOORE[d][1];if(nx>=0&&ny>=0&&nx<W&&ny<H&&inC[ny*W+nx]){found=d;break}}if(found<0)break;const prev=(found+7)%8;const bxv=MOORE[prev][0]-MOORE[found][0],byv=MOORE[prev][1]-MOORE[found][1];b=MOORE.findIndex(v=>v[0]===bxv&&v[1]===byv);if(b<0)b=(found+5)%8;x+=MOORE[found][0];y+=MOORE[found][1];if(x===sx&&y===sy)break;out.push([x,y])}return out}
+function perpDist(p,a,b){const dx=b.x-a.x,dy=b.y-a.y,len=Math.hypot(dx,dy)||1;return Math.abs(dy*(p.x-a.x)-dx*(p.y-a.y))/len}
+function simplifyOpen(pts,eps){if(pts.length<3)return pts;let maxD=0,idx=0;const a=pts[0],b=pts[pts.length-1];for(let i=1;i<pts.length-1;i++){const d=perpDist(pts[i],a,b);if(d>maxD){maxD=d;idx=i}}if(maxD>eps){const L=simplifyOpen(pts.slice(0,idx+1),eps),R=simplifyOpen(pts.slice(idx),eps);return L.slice(0,-1).concat(R)}return[a,b]}
+function simplifyClosed(loop,eps){const pts=loop.map(([x,y])=>({x,y}));let far=0,fd=-1;for(let i=1;i<pts.length;i++){const d=Math.hypot(pts[i].x-pts[0].x,pts[i].y-pts[0].y);if(d>fd){fd=d;far=i}}const A=simplifyOpen(pts.slice(0,far+1),eps),B=simplifyOpen(pts.slice(far).concat([pts[0]]),eps);return A.slice(0,-1).concat(B.slice(0,-1))}
+function polyArea(P){let s=0;for(let i=0;i<P.length;i++){const a=P[i],b=P[(i+1)%P.length];s+=a.x*b.y-b.x*a.y}return Math.abs(s)/2}
+// gray: Uint8Array of brightness, W x H. sc: original pixels per working pixel.
+function findRoomsInGray(gray,W,H,sc){
+  const thr=otsuThreshold(gray),mask=new Uint8Array(W*H),total=W*H;
+  for(let i=0;i<total;i++)mask[i]=gray[i]>thr?1:0;
+  const out=[];
+  for(const pix of labelLightAreas(mask,W,H)){
+    const area=pix.length;
+    if(area<total*0.004||area>total*0.45)continue;
+    let edge=false,minX=W,maxX=0,minY=H,maxY=0;
+    for(const p of pix){const x=p%W,y=(p-x)/W;if(x===0||y===0||x===W-1||y===H-1){edge=true;break}if(x<minX)minX=x;if(x>maxX)maxX=x;if(y<minY)minY=y;if(y>maxY)maxY=y}
+    if(edge)continue;
+    const bw=maxX-minX+1,bh=maxY-minY+1;
+    if(bw<6||bh<6)continue;
+    let poly=null;
+    if(area/(bw*bh)<0.95){
+      const inC=new Uint8Array(total);for(const p of pix)inC[p]=1;
+      let start=pix[0];for(const p of pix)if(p<start)start=p;
+      const loop=traceOutline(inC,W,H,start);
+      if(loop.length>=4){const P=simplifyClosed(loop,1.5);const pa=polyArea(P);if(P.length>=3&&pa>area*0.8&&pa<area*1.2)poly=P}
+      if(!poly)continue;
     }
-    c.delete();
+    out.push({x:minX*sc,y:minY*sc,w:bw*sc,h:bh*sc,area,poly:poly?poly.map(p=>({x:p.x*sc,y:p.y*sc})):null});
   }
-  src.delete();gray.delete();bin.delete();cnts.delete();hier.delete();
   out.sort((a,b)=>b.w*b.h-a.w*a.h);
   return out.filter((r,i)=>!out.slice(0,i).some(o=>r.x>=o.x&&r.y>=o.y&&r.x+r.w<=o.x+o.w&&r.y+r.h<=o.y+o.h));
 }
-function skMsg(t){const el=$('skMsg');if(el)el.textContent=t;else setStat(t)}
+
+// Local-contrast wall detection: a pixel is a wall if it is clearly darker than the paper around it.
+function prepareGray(g,W,H,closeR){
+  const integ=new Float64Array((W+1)*(H+1));
+  for(let y=0;y<H;y++){let row=0;for(let x=0;x<W;x++){row+=g[y*W+x];integ[(y+1)*(W+1)+x+1]=integ[y*(W+1)+x+1]+row}}
+  const R=20,wall=new Uint8Array(W*H);
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+    const x0=Math.max(0,x-R),x1=Math.min(W-1,x+R),y0=Math.max(0,y-R),y1=Math.min(H-1,y+R);
+    const S=integ[(y1+1)*(W+1)+x1+1]-integ[y0*(W+1)+x1+1]-integ[(y1+1)*(W+1)+x0]+integ[y0*(W+1)+x0];
+    const mean=S/((x1-x0+1)*(y1-y0+1));
+    wall[y*W+x]=g[y*W+x]<mean-14?1:0;
+  }
+  // Close small gaps in the walls by thickening them.
+  const out=new Uint8Array(W*H);
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+    let on=0;
+    for(let dy=-closeR;dy<=closeR&&!on;dy++){const yy=y+dy;if(yy<0||yy>=H)continue;for(let dx=-closeR;dx<=closeR;dx++){const xx=x+dx;if(xx>=0&&xx<W&&wall[yy*W+xx]){on=1;break}}}
+    out[y*W+x]=on?0:255;
+  }
+  return out;
+}
+function bboxOverlapRatio(c,o){const ix=Math.max(0,Math.min(c.x+c.w,o.x+o.w)-Math.max(c.x,o.x));const iy=Math.max(0,Math.min(c.y+c.h,o.y+o.h)-Math.max(c.y,o.y));return (ix*iy)/((c.w*c.h)||1)}
+// Rooms from the narrow closing are kept as they are. Rooms from the wider closing are added only where they don't overlap a room already found.
+function findRoomsMerged(g,W,H,sc){
+  const a=findRoomsInGray(prepareGray(g,W,H,1),W,H,sc);
+  const b=findRoomsInGray(prepareGray(g,W,H,2),W,H,sc);
+  const acc=a.slice();
+  for(const c of b){if(!acc.some(o=>bboxOverlapRatio(c,o)>0.15))acc.push(c)}
+  return acc.sort((p,q)=>q.w*q.h-p.w*p.h);
+}
+
 async function skDetect(){
   const ft=+$('skFt').value;
   if(sk.pts.length<2){skMsg('Tap two points on a wall first.');return}
   if(!ft){skMsg('Enter the wall length in feet.');return}
   const px=Math.hypot(sk.pts[0].x-sk.pts[1].x,sk.pts[0].y-sk.pts[1].y);
   sk.k=ft/px;
-  const t0=Date.now(),first=!window.cvReady;
-  const label=()=>(window.cvReady?'Finding rooms':(first?'Downloading the room finder (about 8 MB, first time only)':'Starting the room finder'))+'… '+Math.round((Date.now()-t0)/1000)+' s';
-  skMsg(label());
-  const tick=setInterval(()=>skMsg(label()),1000);
+  skMsg('Finding rooms…');
   try{
-    await loadCV();
-    skMsg('Finding rooms…');
-    const c=document.createElement('canvas');c.width=sk.img.width;c.height=sk.img.height;
-    c.getContext('2d').drawImage(sk.img,0,0);
-    sk.cands=detectRooms(c).map(r=>({...r,wf:clamp(Math.round(r.w*sk.k),1,200),hf:clamp(Math.round(r.h*sk.k),1,200)}));
-    clearInterval(tick);
+    const Wk=Math.min(700,sk.img.width),Hk=Math.round(sk.img.height*Wk/sk.img.width);
+    const c=document.createElement('canvas');c.width=Wk;c.height=Hk;
+    const ctx=c.getContext('2d');ctx.drawImage(sk.img,0,0,Wk,Hk);
+    const d=ctx.getImageData(0,0,Wk,Hk).data;
+    const gray=new Uint8Array(Wk*Hk);
+    for(let i=0;i<Wk*Hk;i++)gray[i]=(d[i*4]*0.3+d[i*4+1]*0.59+d[i*4+2]*0.11)|0;
+    const found=findRoomsMerged(gray,Wk,Hk,sk.img.width/Wk);
+    sk.cands=found.map(r=>({...r,wf:clamp(Math.round(r.w*sk.k),1,200),hf:clamp(Math.round(r.h*sk.k),1,200)}));
     skStage('review');
-  }catch(err){
-    clearInterval(tick);
-    skMsg('Could not finish: '+((err&&err.message)||err)+'. Check the internet connection, then tap Find rooms again.');
-  }
+  }catch(err){skMsg('Could not finish: '+((err&&err.message)||err)+'. Try a clearer photo.')}
 }
 function skAdd(){
   const s=sk.k*PX;let added=0,skipped=0;
