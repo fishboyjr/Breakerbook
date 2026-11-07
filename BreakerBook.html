@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>BreakerBook v53</title>
+<title>BreakerBook v54</title>
 
 <style>
 :root{color-scheme:light dark;--bg:#f0f3f7;--pn:#fff;--bgi:#f4f6f9;--fg:#1b2733;--mut:#64748b;--ln:#dfe5ec;--ac:#0b7fc0;--act:#fff;--ac2:#e3f1fb;--wall:#8795a5;--rf:rgba(11,127,192,.05);--rfs:rgba(11,127,192,.13);--sh:0 1px 2px rgba(16,24,40,.05),0 2px 10px rgba(16,24,40,.05);--r:14px}
@@ -144,8 +144,11 @@ header{position:sticky;top:0;z-index:4}
 .spl-hint{position:absolute;bottom:calc(36px + env(safe-area-inset-bottom,0px));font-size:13px;color:#8fb3cb;animation:splblink 2.2s ease-in-out infinite}
 @keyframes splpop{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
 @keyframes splblink{0%,100%{opacity:.35}50%{opacity:1}}
+.nr{color:#d33;font-weight:600;font-size:12px;margin:2px 0}
+@media(prefers-color-scheme:dark){.nr{color:#ff7b72}}
+.pri{background:var(--ac);color:var(--act);border-color:var(--ac)}
 </style></head><body>
-<header><div class="brand"><span class="logo"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M13.2 2 4.5 13.4h5.6L9 22l9.5-12h-5.8L13.2 2Z"/></svg></span><b>BreakerBook</b><span class="tag">Map your home's electrical system</span><span class="ver">v53</span></div>
+<header><div class="brand"><span class="logo"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M13.2 2 4.5 13.4h5.6L9 22l9.5-12h-5.8L13.2 2Z"/></svg></span><b>BreakerBook</b><span class="tag">Map your home's electrical system</span><span class="ver">v54</span></div>
 <div class="acts"><button data-act="open">Open file</button><button data-act="printOpts">Print</button><button data-act="undo">Undo</button><button data-act="new">New</button><button data-act="save">Save file</button></div>
 <nav class="seg" id="modes"></nav>
 <input type="file" id="fIn" accept=".json,application/json" hidden><span id="stat"></span></header>
@@ -181,7 +184,7 @@ header{position:sticky;top:0;z-index:4}
 <input type="file" id="phFile" accept="image/*" hidden>
 <input type="file" id="skFile" accept="image/*" hidden>
 <datalist id="roomNames"></datalist><datalist id="brkWords"></datalist>
-<div id="splash"><div class="spl-logo"><svg viewBox="0 0 24 24" width="52" height="52" fill="currentColor"><path d="M13.2 2 4.5 13.4h5.6L9 22l9.5-12h-5.8L13.2 2Z"/></svg></div><h1>BreakerBook</h1><p>Map your home's electrical system</p><span class="spl-ver">Version 53</span><div class="spl-hint">Tap anywhere to begin</div></div>
+<div id="splash"><div class="spl-logo"><svg viewBox="0 0 24 24" width="52" height="52" fill="currentColor"><path d="M13.2 2 4.5 13.4h5.6L9 22l9.5-12h-5.8L13.2 2Z"/></svg></div><h1>BreakerBook</h1><p>Map your home's electrical system</p><span class="spl-ver">Version 54</span><div class="spl-hint">Tap anywhere to begin</div></div>
 <div id="print"></div>
 <script>
 const DT=['Outlet','Switch','Light','Fan','Fixture','Other'];
@@ -582,7 +585,7 @@ function askConfirm(msg,fn){pendingYes=fn;$('cmsg').textContent=msg;$('cdlg').cl
 function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=()=>rej(new Error('load failed'));document.head.appendChild(s)})}
 // Photo import (v53): two photo types. The person taps the four corners of the area, the app straightens it,
 // cuts it into rows, and suggests amps (panel photo) or labels (written list). Every row is shown beside its crop to confirm.
-let phPending=null,phCtx={panel:null,kind:'panel',wiz:false,img:null,src:null,pts:[],cols:2,numbering:'pairs',slots:24,note:'',rect:null,rows:[]};
+let phPending=null,phCtx={done:{panel:false,list:false},panel:null,kind:'panel',wiz:false,img:null,src:null,pts:[],cols:2,numbering:'pairs',slots:24,note:'',rect:null,rows:[]};
 const AMP_WORDS=['15','20','25','30','35','40','45','50','60','70','80','90','100','110','125','150','175','200'];
 const BRK_WORDS=['RANGE','OVEN','STOVE','COOKTOP','FURNACE','HEAT','HEATER','AC','COOLING','KITCHEN','RECEPT','RECEPTACLE','RECEPTACLES','OUTLET','OUTLETS','GARAGE','OFFICE','LIGHT','LIGHTS','LTS','DRYER','WASHER','WASHING','MACHINE','REFRIGERATOR','FRIDGE','FREEZER','DISHWASHER','DISPOSAL','MICROWAVE','BEDROOM','BED','BATH','BATHROOM','LIVING','ROOM','DINING','FAMILY','BASEMENT','WATER','HEATER','PUMP','SUMP','WELL','OUTSIDE','EXTERIOR','PORCH','DECK','SMOKE','FAN','SPARE','HALL','LAUNDRY','WORKBENCH','SHOP','UTILITY','SINK','COUNTER','MASTER','GUEST','CLOSET','ATTIC','STAIRS','DOOR','DOORBELL','ALARM','TV','PANEL','SUB','MAIN','GFCI','GFI','MOTOR','AIR','CONDITIONER','HOT','TUB','POOL','SHED','EV','CHARGER'];
 const GLD={
@@ -599,9 +602,11 @@ const GLD={
 };
 
 // Straightens the four tapped corners (TL, TR, BR, BL) into a W-wide rectangle. Returns gray values and a color canvas.
-function rectify(src,pts,W){
+function rectify(src,pts){
   const [tl,tr,br,bl]=pts,d=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
-  const H=Math.max(60,Math.min(1800,Math.round(W*((d(tl,bl)+d(tr,br))/2)/Math.max(1,(d(tl,tr)+d(bl,br))/2))));
+  const wN=(d(tl,tr)+d(bl,br))/2,hN=(d(tl,bl)+d(tr,br))/2;
+  const sc=Math.max(.4,Math.min(1.6,2200/Math.max(1,hN),1400/Math.max(1,wN)));
+  const W=Math.max(60,Math.round(wN*sc)),H=Math.max(60,Math.round(hN*sc));
   const sw=src.width,sh=src.height,sd=src.getContext('2d').getImageData(0,0,sw,sh).data;
   const cv=document.createElement('canvas');cv.width=W;cv.height=H;
   const cx=cv.getContext('2d'),out=cx.createImageData(W,H),g=new Float32Array(W*H);
@@ -635,8 +640,13 @@ function estimateRows(g,W,H,cols){
   if(best<0.18)return null;
   // the first strong peak is the true row height; longer lags are multiples of it
   for(let l=lo+1;l<bl;l++)if(ac[l]>=0.8*best&&ac[l]>=ac[l-1]&&ac[l]>=(ac[l+1]||0)){bl=l;break}
-  const R=Math.round(H/bl);
-  return R>=3&&R<=24?R:null;
+  // refine the period: slide a comb of row boundaries over the edge profile and keep the best fit
+  const sm=new Float32Array(H);for(let y=0;y<H;y++){let m=-1e9;for(let d=-2;d<=2;d++)m=Math.max(m,p[Math.min(H-1,Math.max(0,y+d))]);sm[y]=m}
+  let bT=bl,bS=-1e9,bP=0;
+  for(let T=bl*0.9;T<=bl*1.1;T+=bl*0.004)for(let ph=0;ph<T;ph+=2){let t=0,n=0;for(let y=ph;y<H;y+=T){t+=sm[Math.round(y)];n++}t/=n;if(t>bS){bS=t;bT=T;bP=ph}}
+  if(bP>0.55*bT)bP-=bT;
+  const R=Math.round((H-bP)/bT);
+  return R>=3&&R<=24?{R,ph:bP}:null;
 }
 function slotFor(r,col,R,cols,numbering){
   if(cols===1)return r+1;
@@ -661,7 +671,7 @@ function splitGlued(c,W){
   return parts.filter(P=>P.pix.length>=6).map(P=>({...P,w:P.x1-P.x0+1,h:P.y1-P.y0+1}));
 }
 // Reads the amps printed on a handle: finds digit-sized marks (dark on light or light on dark) and compares them with common amp sizes.
-function readAmps(g,w,h){
+function readAmps0(g,w,h){
   let best=null;
   for(const pol of [0,1]){
     const gg=pol?g.map(v=>255-v):g;
@@ -690,7 +700,7 @@ function readAmps(g,w,h){
     }
   }
   if(!best)return null;
-  return {top:best.rk.slice(0,3).map(r=>r.word),sure:best.rk[0].score>-0.35&&best.margin>=0.05};
+  return {top:best.rk.slice(0,3).map(r=>r.word),score:best.rk[0].score,sure:best.rk[0].score>-0.35&&best.margin>=0.05};
 }
 let _digitT=null;
 // Printed digit shapes, drawn with the device's own bold and regular sans fonts.
@@ -740,13 +750,13 @@ function readListRow(g,w,h){
 }
 function phBuildRows(){
   const r=phCtx.rect,cols=phCtx.cols,R=cols===2?Math.ceil(phCtx.slots/2):phCtx.slots;
-  const rows=[],cw=Math.floor(r.W/cols),rh=r.H/R,cx=r.cv.getContext('2d');
+  const rows=[],cw=Math.floor(r.W/cols),ph=phCtx.rowPh||0,rh=(r.H-ph)/R;
   for(let col=0;col<cols;col++)for(let i=0;i<R;i++){
     const slot=slotFor(i,col,R,cols,phCtx.numbering);
     if(slot>phCtx.slots)continue;
-    const x0=col*cw,y0=Math.round(i*rh),h=Math.max(8,Math.round(rh)),w=cw;
+    const x0=col*cw,y0=Math.round(ph+i*rh),h=Math.max(8,Math.round(rh)),w=cw;
     const g=new Float32Array(w*h);
-    for(let y=0;y<h;y++)for(let x=0;x<w;x++)g[y*w+x]=r.g[Math.min(r.H-1,y0+y)*r.W+x0+x];
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++)g[y*w+x]=r.g[Math.max(0,Math.min(r.H-1,y0+y))*r.W+x0+x];
     let read=null;
     try{read=phCtx.kind==='panel'?readAmps(g,w,h):readListRow(g,w,h)}catch(e){read=null}
     const cv=document.createElement('canvas'),k=Math.min(1,300/w);cv.width=Math.round(w*k);cv.height=Math.round(h*k);
@@ -758,9 +768,9 @@ function phBuildRows(){
 }
 function phProcess(){
   const pts=phCtx.pts;if(pts.length<4)return;
-  const W=phCtx.cols===2?1000:600;
-  phCtx.rect=rectify(phCtx.src,pts,W);
-  const R=estimateRows(phCtx.rect.g,phCtx.rect.W,phCtx.rect.H,phCtx.cols);
+  phCtx.rect=rectify(phCtx.src,pts);
+  const est=estimateRows(phCtx.rect.g,phCtx.rect.W,phCtx.rect.H,phCtx.cols),R=est&&est.R;
+  phCtx.rowPh=est?est.ph:0;
   if(R){phCtx.slots=phCtx.cols===2?R*2:R;phCtx.note=`Counted ${phCtx.slots} slots in the photo. Change the number if that is wrong.`}
   else{phCtx.slots=phCtx.panel&&phCtx.panel.total?phCtx.panel.total:24;phCtx.note=`I could not count the slots from the photo, so I used ${phCtx.slots}. How many slots does this panel have? Change the number if needed.`}
   phBuildRows();phStage('rows');
@@ -771,11 +781,11 @@ function phStage(stage){
   const kindName=phCtx.kind==='panel'?'panel photo (amps)':'written list (labels)';
   if(stage==='pick'){
     box.innerHTML=`<h3 style="margin:0">Import breakers from a photo</h3>
-      <p class="sm">The photo stays on this iPad and is not uploaded. You can import both photos for the same panel: the amps from the panel, then the labels from the list.</p>
+      <p class="sm">The photo stays on this iPad and is not uploaded. Use either photo or both: the panel photo gives the amps and the written list gives the labels. They are combined by slot number.${phCtx.msg?` <b>${esc(phCtx.msg)}</b>`:''}</p>
       ${phCtx.panel&&phCtx.wiz?`<p class="sm"><b>${esc(phCtx.panel.name)}</b></p>`:`<select id="phPanel">${S.panels.map(p=>`<option value="${p.id}"${phCtx.panel&&phCtx.panel.id===p.id?' selected':''}>${esc(p.name)}</option>`).join('')}</select>`}
-      <button class="opt" data-act="phType" data-v="panel"><b>Photo of the panel</b><span>Door open. Reads the amps printed on the breaker handles.</span></button>
-      <button class="opt" data-act="phType" data-v="list"><b>Photo of the written list</b><span>Usually inside the door. Reads the labels beside each number.</span></button>
-      <div class="row"><button data-act="phCancel">Cancel</button></div>`;
+      <button class="opt" data-act="phType" data-v="panel"><b>${phCtx.done.panel?'&#10003; ':''}Photo of the panel</b><span>Door open. Reads the amps printed on the breaker handles.</span></button>
+      <button class="opt" data-act="phType" data-v="list"><b>${phCtx.done.list?'&#10003; ':''}Photo of the written list</b><span>Usually inside the door. Reads the labels beside each number.</span></button>
+      <div class="row"><button data-act="phCancel"${phCtx.done.panel||phCtx.done.list?' class="pri"':''}>${phCtx.done.panel||phCtx.done.list?'Done':'Cancel'}</button></div>`;
   }else if(stage==='corners'){
     const tip=phCtx.kind==='panel'
       ?'Tap the four corners around all the breaker handles: top-left, top-right, bottom-right, bottom-left. Start at the top of the first row and end at the bottom of the last row. Include both columns.'
@@ -799,12 +809,14 @@ function phStage(stage){
           const chips=(rd?rd.top:[]).concat(['15','20','30','40','50']).filter((v,j,a)=>a.indexOf(v)===j).slice(0,6);
           return `<div class="skrow"><span class="sn">${r.slot}</span><div class="skmain"><img class="phimg" src="${r.crop}" alt="Row ${r.slot}">
             <div class="row"><input data-pa="${i}" type="number" inputmode="numeric" placeholder="Amps" value="${esc(sure)}" style="flex:1"><label class="sm" style="flex:2;white-space:nowrap"><input type="checkbox" data-p2="${i}" style="width:auto"> 2-pole (also uses slot ${r.next})</label></div>
+            ${sure?'':'<div class="nr">Not recognized: tap the amps below or type them</div>'}
             <div class="skhint">${chips.map(v=>`<button class="tg" data-act="phAmp" data-i="${i}" data-v="${v}">${v}A</button>`).join('')}</div></div></div>`;
         }
         const val=rd&&rd.sure?rd.text:'';
         const chips=(rd&&!rd.blank?rd.chips:[]);
         return `<div class="skrow"><span class="sn">${r.slot}</span><div class="skmain"><img class="phimg" src="${r.crop}" alt="Row ${r.slot}">
           <div class="row"><input data-pl="${i}" list="brkWords" placeholder="${rd&&rd.blank?'(looks blank)':'Label'}" value="${esc(val)}" style="flex:2"><input data-pm="${i}" type="number" inputmode="numeric" placeholder="Amps" style="flex:1"></div>
+          ${val?'':(rd&&rd.blank?'<div class="sm">Looks empty. Leave blank if nothing is written.</div>':'<div class="nr">Not recognized: type the label</div>')}
           ${i>0?`<div class="skhint"><button class="tg" data-act="phSame" data-i="${i}">Same as above</button></div>`:''}
           ${!val&&rd&&rd.text?`<div class="skhint"><span class="sm">Partly read:</span><button class="tg" data-act="phLab" data-i="${i}" data-v="${esc(rd.text)}">${esc(rd.text)}</button></div>`:''}
           ${chips.length?`<div class="skhint">${chips.map(v=>`<button class="tg" data-act="phLab" data-i="${i}" data-v="${esc(v)}">${esc(v)}</button>`).join('')}</div>`:''}</div></div>`;
@@ -835,7 +847,7 @@ function phTap(e){
 }
 function openPhoto(panelId,wiz){
   if(!S.panels.length){alert('Add a panel first.');return}
-  phCtx={panel:S.panels.find(p=>p.id===panelId)||null,kind:'panel',wiz:!!wiz,img:null,src:null,pts:[],cols:2,numbering:'pairs',slots:24,note:'',rect:null,rows:[]};
+  phCtx={done:{panel:false,list:false},panel:S.panels.find(p=>p.id===panelId)||null,kind:'panel',wiz:!!wiz,img:null,src:null,pts:[],cols:2,numbering:'pairs',slots:24,note:'',rect:null,rows:[]};
   if(!phCtx.panel&&curPanel)phCtx.panel=S.panels.find(p=>p.id===curPanel)||null;
   phStage('pick');$('phdlg').classList.add('open');
 }
@@ -845,7 +857,7 @@ function phLoad(f){
     const k=Math.min(1,1800/Math.max(img.width,img.height)),cv=document.createElement('canvas');
     cv.width=Math.round(img.width*k);cv.height=Math.round(img.height*k);
     cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
-    phCtx.src=cv;phCtx.pts=[];phCtx.cols=2;phCtx.numbering=phCtx.kind==='panel'?'pairs':'cols';phStage('corners');
+    phCtx.src=cv;phCtx.pts=[];phCtx.cols=2;phCtx.numbering='pairs';phStage('corners');
   };
   img.src=URL.createObjectURL(f);
 }
@@ -860,9 +872,9 @@ function updateFromPhoto(ex,b){
   if(b.funcs){ex.funcs=b.funcs;ex.label=b.funcs}
 }
 function finishPhoto(added,updated){
-  $('phdlg').classList.remove('open');phPending=null;
-  setStat(`Added ${added}${updated?`, updated ${updated}`:''}. Import another photo to add more.`);
-  phReturn();
+  phPending=null;phCtx.done[phCtx.kind]=true;
+  phCtx.msg=`Added ${added}${updated?`, updated ${updated}`:''}. Import the other photo, or tap Done.`;
+  phCtx.pts=[];phStage('pick');
 }
 function applyGuide(){
   const p=phCtx.panel;if(!p)return;
@@ -892,6 +904,24 @@ function applyGuide(){
   }
   if(conflicts.length){phPending={p,conflicts,added};phStage('conflicts');return}
   finishPhoto(added,updated);
+}
+
+// Digits on handles are often printed sideways, so the cell is also tried turned a quarter turn each way.
+function rotateGray(g,w,h,dir){
+  const o=new Float32Array(w*h);
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+    if(dir>0)o[x*h+(h-1-y)]=g[y*w+x];   // clockwise: new width h, new height w
+    else o[(w-1-x)*h+y]=g[y*w+x];
+  }
+  return o;
+}
+function readAmps(g,w,h){
+  let best=readAmps0(g,w,h);
+  for(const dir of [1,-1]){
+    const r=readAmps0(rotateGray(g,w,h,dir),h,w);
+    if(r&&(!best||r.score>best.score))best=r;
+  }
+  return best;
 }
 
 // Sketch import (Floors mode): finds closed room outlines in a photo of a hand-drawn plan.
