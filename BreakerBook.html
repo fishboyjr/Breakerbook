@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>BreakerBook v38</title>
+<title>BreakerBook v39</title>
 
 <style>
 :root{color-scheme:light dark;--bg:#f5f5f3;--fg:#1d1d1f;--pn:#fff;--ln:#cfcfca;--ac:#2b6cb0}
@@ -95,7 +95,7 @@ textarea{width:100%;font:inherit;color:inherit;background:var(--bg);border:1px s
 .pgr{max-height:62vh;overflow:auto;padding-right:4px}
 @media(max-width:640px){.pg{grid-template-columns:1fr}.pgl{max-height:40vh}.pgr{max-height:none}}
 </style></head><body>
-<header><b>BreakerBook <span class="sm">v38</span></b>
+<header><b>BreakerBook <span class="sm">v39</span></b>
 <button data-act="open">Open file</button><button data-act="save">Save file</button><button data-act="printOpts">Print</button><button data-act="undo">Undo</button><button data-act="new">New</button>
 <input type="file" id="fIn" accept=".json,application/json" hidden><span class="sm" id="stat"></span></header>
 <main><div id="plan"><div id="tabs"></div><svg id="svg" viewBox="0 0 960 640"></svg><div id="bview"></div></div><aside id="side"></aside></main><div id="pdlg"><div class="box">
@@ -148,7 +148,9 @@ const snap=v=>Math.round(v/PX)*PX;
 const find=(k,id)=>({room:S.rooms,device:S.devices,breaker:S.breakers,panel:S.panels}[k]||[]).find(o=>o.id===id);
 const bnum=b=>b.slot2?`${b.slot} & ${b.slot2}`:b.slot+(b.pole||'');
 const colorOf=id=>{const i=S.breakers.findIndex(b=>b.id===id);return i<0?'#888':`hsl(${PALETTE[i%PALETTE.length]} 60% 42%)`};
-const panelName=id=>(S.panels.find(p=>p.id===id)||{}).name||'';
+const pnum=p=>'P'+(p.num||(S.panels.indexOf(p)+1));
+const nextPanelNum=()=>Math.max(0,...S.panels.map(p=>p.num||0))+1;
+const panelName=id=>{const p=S.panels.find(x=>x.id===id);return p?pnum(p)+' '+p.name:''};
 const avail=p=>Array.from({length:p.total||0},(_,i)=>i+1).filter(n=>!S.breakers.some(b=>b.panel===p.id&&(b.slot===n||b.slot2===n)));
 const setStat=t=>{$('stat').textContent=t};
 let dirty=false,currentName='breakerbook';
@@ -196,7 +198,7 @@ function placeDev(d){
 }
 function delSel(){
   if(!sel)return;const {kind,id}=sel;
-  if(kind==='room'){S.rooms=S.rooms.filter(r=>r.id!==id);S.devices.forEach(d=>{if(d.room===id){d.room='';d.x=null;d.y=null}})}
+  if(kind==='room'){S.rooms=S.rooms.filter(r=>r.id!==id);S.panels.forEach(p=>{if(p.room===id){p.room='';p.x=null;p.y=null}});S.devices.forEach(d=>{if(d.room===id){d.room='';d.x=null;d.y=null}})}
   else if(kind==='device'){S.devices=S.devices.filter(d=>d.id!==id);S.devices.forEach(d=>{if(d.ctrl===id)d.ctrl=''})}
   else if(kind==='breaker'){S.breakers=S.breakers.filter(b=>b.id!==id);S.devices.forEach(d=>{if(d.breaker===id)d.breaker=''})}
   else if(kind==='panel'){
@@ -230,18 +232,13 @@ function drawPlan(){
     }
     for(const r of S.rooms.filter(r=>r.floor===cur&&r.pts&&sel?.kind==='room'&&sel.id===r.id))h+=r.pts.map((p,i)=>`<circle data-kind="vertex" data-id="${r.id}" data-vi="${i}" cx="${r.x+p.x}" cy="${r.y+p.y}" r="22" style="fill:transparent;cursor:move"/><circle data-kind="vertex" data-id="${r.id}" data-vi="${i}" cx="${r.x+p.x}" cy="${r.y+p.y}" r="9" style="fill:var(--ac);stroke:#fff;pointer-events:none"/>`).join('');
     // Dotted arcs: each device to the device it is controlled from (switch to first light, then light to light).
-    for(const b of S.breakers.filter(b=>b.x!=null&&b.floor===cur)){const s=sel?.kind==='breaker'&&sel.id===b.id;h+=`<g data-kind="breaker" data-id="${b.id}" style="cursor:move"><rect x="${b.x}" y="${b.y}" width="66" height="26" rx="3" style="fill:var(--pn);stroke:${s?'var(--ac)':'var(--fg)'};stroke-width:${s?3:1.5}"/><text x="${b.x+6}" y="${b.y+17}" font-size="11" font-weight="bold" style="fill:var(--fg)">${esc(bnum(b))}${b.amps?' · '+esc(b.amps)+'A':''}</text></g>`}
     for(const d of S.devices){
       const c=d.ctrl&&S.devices.find(x=>x.id===d.ctrl);
       if(!c||c.x==null||d.x==null||c.floor!==cur||d.floor!==cur)continue;
       const mx=(c.x+d.x)/2,my=(c.y+d.y)/2,dx=d.x-c.x,dy=d.y-c.y,len=Math.hypot(dx,dy)||1,off=len*0.25;
       h+=`<path d="M${c.x} ${c.y} Q${mx-dy/len*off} ${my+dx/len*off} ${d.x} ${d.y}" style="fill:none;stroke:var(--fg);stroke-width:1.5;stroke-dasharray:4 4"/>`;
     }
-    for(const p of S.panels.filter(p=>p.floor===cur)){
-      const s=sel?.kind==='panel'&&sel.id===p.id,n=S.breakers.filter(b=>b.panel===p.id).length;
-      h+=`<g data-kind="panel" data-id="${p.id}" style="cursor:move"><rect x="${p.x}" y="${p.y}" width="${PW}" height="${PH}" rx="4" style="fill:var(--bg);stroke:${s?'var(--ac)':'var(--fg)'};stroke-width:2"/><text x="${p.x+6}" y="${p.y+16}" font-size="11" font-weight="bold" style="fill:var(--fg)">${esc(p.name)}</text><text x="${p.x+6}" y="${p.y+32}" font-size="9" style="fill:var(--fg)">${n} brk · ${avail(p).length} avail</text></g>`;
-    }
-    for(const b of S.breakers.filter(b=>b.x!=null&&b.floor===cur)){const s=sel?.kind==='breaker'&&sel.id===b.id;h+=`<g data-kind="breaker" data-id="${b.id}" style="cursor:move"><rect x="${b.x}" y="${b.y}" width="66" height="26" rx="3" style="fill:var(--pn);stroke:${s?'var(--ac)':'var(--fg)'};stroke-width:${s?3:1.5}"/><text x="${b.x+6}" y="${b.y+17}" font-size="11" font-weight="bold" style="fill:var(--fg)">${esc(bnum(b))}${b.amps?' · '+esc(b.amps)+'A':''}</text></g>`}
+    for(const p of S.panels.filter(p=>p.floor===cur&&p.x!=null)){const s=sel?.kind==='panel'&&sel.id===p.id;h+=`<g data-kind="panel" data-id="${p.id}" style="cursor:move"><rect x="${p.x-12}" y="${p.y-12}" width="24" height="24" rx="5" style="fill:var(--pn);stroke:${s?'var(--ac)':'var(--fg)'};stroke-width:${s?3:1.5}"/><path d="M${p.x+2} ${p.y-8} L${p.x-4} ${p.y+1} L${p.x} ${p.y+1} L${p.x-2} ${p.y+8} L${p.x+4} ${p.y-1} L${p.x} ${p.y-1} Z" style="fill:#e0a800"/><text x="${p.x+18}" y="${p.y+4}" font-size="12" font-weight="bold" style="fill:var(--fg)">${pnum(p)} ${esc(p.name)}</text></g>`}
     for(const d of S.devices){
       if(d.x==null||d.floor!==cur)continue;
       const s=sel?.kind==='device'&&sel.id===d.id;
@@ -272,7 +269,7 @@ function editor(){
   if(sel.kind==='room')b=f('name','Name',o.name)+s('floor','Floor',S.floors.map((n,i)=>[i,n]),o.floor)+(o.pts?`<p class="sm">Irregular shape with ${o.pts.length} corners. Drag a blue corner on the plan to reshape it.</p><div class="row"><button data-act="vAdd" data-id="${o.id}">Add corner</button><button data-act="vDel" data-id="${o.id}">Remove last corner</button></div>`:f('w','Width (ft, top to bottom)',o.w,'number')+f('h','Length (ft, left to right)',o.h,'number'));
   if(sel.kind==='device')b=f('name','Name',o.name)+s('type','Type',DT.map(t=>[t,t]),o.type)+s('room','Room',[['','(none)'],...S.rooms.map(r=>[r.id,r.name])],o.room)+s('breaker','Breaker',[['','(none)'],...S.breakers.map(x=>[x.id,bnum(x)+(x.label?' '+x.label:'')])],o.breaker)+s('ctrl','Controlled from (same breaker only)',[['','(none)'],...(o.breaker?S.devices.filter(x=>x.id!==o.id&&x.floor===o.floor&&x.breaker===o.breaker):[]).map(x=>[x.id,x.name+' ('+x.type+')'])],o.ctrl)+c('gfci','GFCI protected',o.gfci)+c('critical','Critical load (sump pump, fridge, freezer)',o.critical);
   if(sel.kind==='breaker')b=f('label','Name / label',o.label)+s('panel','Panel',S.panels.map(p=>[p.id,p.name]),o.panel)+f('slot','Slot',o.slot,'number')+s('pole','Pole',[['','Single'],['A','A (tandem)'],['B','B (tandem)']],o.pole)+f('amps','Amps',o.amps)+s('type','Type',BT.map(t=>[t,t]),o.type)+s('status','Status',[['used','Used'],['unused','Unused']],o.status)+s('feedsPanel','Feeds subpanel',[['','(none)'],...S.panels.filter(p=>p.id!==o.panel).map(p=>[p.id,p.name])],o.feedsPanel);
-  if(sel.kind==='panel')b=f('name','Name',o.name)+f('location','Location',o.location)+s('floor','Floor',S.floors.map((n,i)=>[i,n]),o.floor)+f('total','Total slots',o.total,'number');
+  if(sel.kind==='panel')b=f('name','Name',o.name)+s('floor','Floor',S.floors.map((n,i)=>[i,n]),o.floor)+s('room','Room',[['','(none)'],...S.rooms.filter(q=>q.floor===o.floor).map(q=>[q.id,q.name])],o.room)+f('total','Total slots',o.total,'number');
   return b+`<div class="row" style="margin-top:8px"><button class="danger" data-act="del">Delete ${sel.kind}</button></div>`;
 }
 function floorMarkup(f){const keep=cur,ks=sel;cur=f;sel=null;drawPlan();const m=$('svg').innerHTML;cur=keep;sel=ks;drawPlan();return m}
@@ -306,7 +303,7 @@ function sheetHTML(f){
     <div class="top"><div>${S.showAddress&&S.address?`<p class="addr">${esc(S.address)}</p>`:''}<h2>BreakerBook · ${esc(name)}</h2></div>${f===0?appQR():''}</div>
     <h3>Summary: breakers and rooms</h3>
     ${brks.length?`<table><tr><th>Breaker</th><th>Label</th><th>Panel</th><th>Rooms</th></tr>${brks.map(brkRow).join('')}</table>`:'<p>No breakers assigned on this floor.</p>'}
-    ${panels.map(p=>`<p><b>${esc(p.name)}</b>${p.location?' ('+esc(p.location)+')':''}: available slots ${avail(p).join(', ')||'none'}; unused breakers ${S.breakers.filter(b=>b.panel===p.id&&b.status==='unused').map(bnum).join(', ')||'none'}</p>`).join('')}
+    ${panels.map(p=>`<p><b>${pnum(p)} ${esc(p.name)}</b>${p.room?' · '+esc((S.rooms.find(q=>q.id===p.room)||{}).name||''):''}: available slots ${avail(p).join(', ')||'none'}; unused breakers ${S.breakers.filter(b=>b.panel===p.id&&b.status==='unused').map(bnum).join(', ')||'none'}</p>`).join('')}
     <h3>Layout</h3>
     <svg class="plan" viewBox="${floorBox(f).join(' ')}">${floorMarkup(f)}</svg>
     <h3>Detail: every item on this floor</h3>
@@ -326,9 +323,6 @@ async function buildPrint(){
 }
 // Breakers tab: each panel is drawn as a column of breaker handles, one per slot.
 let bform=null; // {panel,slot,pole,id} while entering or editing a breaker
-// Floor and room for a breaker: the room list shows only rooms on the chosen floor.
-function roomOptsFor(fl,sel){return `<option value="">No room (not on plan)</option>${S.rooms.filter(q=>q.floor===fl).map(q=>`<option value="${q.id}"${q.id===sel?' selected':''}>${esc(q.name)}</option>`).join('')}`}
-function bfFloorRoomRow(b,p){const fl=(b&&b.floor!==undefined)?b.floor:(p?p.floor:0);return `<div class="row"><select id="bfFloor">${S.floors.map((x,i)=>`<option value="${i}"${i===fl?' selected':''}>${esc(x)}</option>`).join('')}</select><select id="bfRoom">${roomOptsFor(fl,b?b.room:'')}</select></div>`}
 function bformHTML(){
   const b=bform.id?S.breakers.find(x=>x.id===bform.id):null;
   const v=b||{label:'',amps:'',type:'Standard',status:'used',feedsPanel:'',pole:bform.pole||''};
@@ -339,7 +333,6 @@ function bformHTML(){
     <div class="row"><input id="bfAmps" placeholder="Amps" value="${esc(v.amps)}"><select id="bfType">${BT.map(t=>`<option${t===v.type?' selected':''}>${t}</option>`).join('')}</select></div>
     <div class="row"><select id="bfStatus"><option value="used"${v.status!=='unused'?' selected':''}>Used</option><option value="unused"${v.status==='unused'?' selected':''}>Unused</option></select>
     <select id="bfFeeds"><option value="">Feeds no subpanel</option>${S.panels.filter(q=>q.id!==bform.panel).map(q=>`<option value="${q.id}"${q.id===v.feedsPanel?' selected':''}>Feeds ${esc(q.name)}</option>`).join('')}</select></div>
-    ${bfFloorRoomRow(b,p)}
     <div class="row"><button data-act="bfSave">Save</button>${b?'<button class="danger" data-act="bfDel">Delete</button>':''}${b&&b.slot2?`<button data-act="split" data-id="${b.id}">Split</button>`:''}<button data-act="bfCancel">Cancel</button></div>`;
 }
 function openWiz(){W={step:'floors',wantRooms:'0',rooms:[],panels:[],panelText:''};showWiz()}
@@ -380,8 +373,8 @@ function finishWiz(){
   W.panels.forEach((p,i)=>{
     const fi=Math.max(0,S.floors.findIndex(x=>x.toLowerCase()===(p.floor||'').toLowerCase()));
     const cnt=S.panels.filter(q=>q.floor===fi).length;
-    const pn={id:uid('p'),name:p.name,location:p.location,total:p.total,floor:fi,x:VW-PW-20,y:20+cnt*(PH+12)};
-    clampPanel(pn);S.panels.push(pn);
+    const pn={id:uid('p'),num:nextPanelNum(),name:p.name,total:p.total,floor:fi,room:'',x:null,y:null};
+    S.panels.push(pn);
     parseBrk($('wb'+i)?.value||'').forEach(b=>{
       if(b.pole){pn.tandem=pn.tandem||{};pn.tandem[b.slot]=true}
       S.breakers.push({id:uid('b'),panel:pn.id,slot:b.slot,pole:b.pole,amps:b.amps,type:'Standard',status:'used',label:b.funcs,funcs:b.funcs,feedsPanel:''});
@@ -408,7 +401,7 @@ function renderBrk(){
   const cols=S.panels.map(p=>{
     let odd='',even='';
     for(let n=1;n<=(p.total||0);n++){if(n%2)odd+=slot(p,n);else even+=slot(p,n)}
-    return `<div class="pnl"><b>${esc(p.name)}</b> <span class="sm">${esc(p.location)}</span><div class="cols"><div>${odd}</div><div>${even}</div></div></div>`;
+    return `<div class="pnl"><b>${pnum(p)} ${esc(p.name)}</b><div class="cols"><div>${odd}</div><div>${even}</div></div></div>`;
   }).join('');
   $('bview').innerHTML=`
     <div class="row" style="margin-bottom:10px"><input id="bpName" placeholder="Panel name (e.g. Main)"><input id="bpTot" type="number" placeholder="Slots"><button data-act="bpAdd">Add panel</button><button data-act="photo">Import from photo</button></div>
@@ -453,7 +446,7 @@ function renderSide(){
     ${list(S.panels.filter(p=>p.floor===cur),p=>`<div class="it ${sel?.id===p.id?'sel':''}" data-act="sel" data-kind="panel" data-id="${p.id}"><span>${esc(p.name)} <span class="sm">${esc(p.location)}</span></span><span class="sm">${avail(p).length} available</span></div>`)}
     <h3>Add panel</h3>
     <div class="row"><input id="pName" placeholder="Panel name (e.g. Main)"></div>
-    <div class="row"><input id="pLoc" placeholder="Location"><input id="pTot" type="number" placeholder="Total slots"></div>
+    <div class="row"><select id="pRoom"><option value="">No room yet</option>${S.rooms.filter(q=>q.floor===cur).map(q=>`<option value="${q.id}">${esc(q.name)}</option>`).join('')}</select><input id="pTot" type="number" placeholder="Total slots"></div>
     <div class="row"><button data-act="addPanel">Add panel to this floor</button></div>`;
   if(mode==='rooms')body=`<h3>Rooms on ${esc(fl)}</h3>
     ${S.floors.length?list(roomsHere,r=>`<div class="it ${sel?.id===r.id?'sel':''}" data-act="sel" data-kind="room" data-id="${r.id}"><span>${esc(r.name)}</span><span class="sm">W ${r.w} × L ${r.h} ft</span></div>`):'<p class="sm">Add a floor first.</p>'}
@@ -478,6 +471,8 @@ function renderSide(){
     ${list(needs,d=>`<div class="it ${sel?.id===d.id?'sel':''}" data-act="sel" data-kind="device" data-id="${d.id}"><span><span class="dot" style="background:#d33"></span>${esc(d.name)} <span class="sm">${d.room?'':'no room'}${d.breaker?'':' no breaker'}</span></span></div>`)}
     <h3>Breakers</h3>
     ${list(S.breakers,b=>`<div class="it ${sel?.id===b.id?'sel':''}" data-act="sel" data-kind="breaker" data-id="${b.id}"><span><span class="dot" style="background:${colorOf(b.id)}"></span>${esc(bnum(b))} ${esc(b.label)}</span><span class="sm">${esc(b.amps)}A</span></div>`)}
+    <h3>Panels without a room</h3>
+    ${list(S.panels.filter(p=>!p.room),p=>`<div class="it ${sel?.id===p.id?'sel':''}" data-act="sel" data-kind="panel" data-id="${p.id}"><span>${pnum(p)} ${esc(p.name)}</span><span class="sm">${esc(S.floors[p.floor]||'')}</span></div>`)}
     <p class="sm">Add breakers in the Breakers tab.</p>`;
   $('side').innerHTML=`<div class="row" style="margin-bottom:6px">${m('floors','Floors')}${m('rooms','Rooms')}${m('devices','Devices')}${m('brk','Breakers')}</div>
     ${info}<div class="edit"><h3 style="margin:0 0 4px">${sel?'Edit '+sel.kind:'Edit'}</h3>${editor()}</div>${body}`;
@@ -714,8 +709,6 @@ function vDel(id){
 // Undo: every change to the data is recorded when the screen redraws (the saved timestamp is ignored).
 let undoStack=[],lastSnap=null;
 const snapKey=()=>{const {updated,...rest}=S;return JSON.stringify(rest)};
-// A breaker is placed in its room, like a small box in the middle of the room.
-function placeBrk(b){const r=S.rooms.find(x=>x.id===b.room);if(!r){b.x=null;b.y=null;return}const n=S.breakers.filter(x=>x.room===r.id&&x.x!=null&&x.id!==b.id).length,bb=roomBox(r);b.floor=r.floor;b.x=Math.round(bb.x+20+(n%3)*70);b.y=Math.round(bb.y+30+Math.floor(n/3)*34)}
 function newFile(){S=blank();VW=960;VH=640;undoStack=[];lastSnap=null;cur=0;sel=null;bform=null;dirty=false;currentName='breakerbook';setStat('New file. Save to keep it.');render()}
 function maybeSetup(){if(!S.setupDone&&!S.floors.length&&!$('sdlg').classList.contains('open'))openWiz()}
 function render(){
@@ -765,10 +758,10 @@ document.addEventListener('click',e=>{
   else if(a==='bfCancel'){bform=null;changed=false}
   else if(a==='bfSave'){
     const amps=$('bfAmps').value.trim().replace(/a$/i,'');
-    const vals={label:$('bfLabel').value.trim(),amps,type:$('bfType').value,status:$('bfStatus').value,feedsPanel:$('bfFeeds').value,floor:+($('bfFloor')?.value||0),room:$('bfRoom')?.value||''};
-    if(bform.id){const t=S.breakers.find(x=>x.id===bform.id),old=t.room;Object.assign(t,vals);if(old!==t.room)placeBrk(t)}
+    const vals={label:$('bfLabel').value.trim(),amps,type:$('bfType').value,status:$('bfStatus').value,feedsPanel:$('bfFeeds').value};
+    if(bform.id)Object.assign(S.breakers.find(x=>x.id===bform.id),vals);
     else if(!S.floors.length)alert('Create your floors first, in the Floors mode.');
-    else{const nb={id:uid('b'),panel:bform.panel,slot:bform.slot,slot2:bform.slot2,pole:bform.pole,...vals};S.breakers.push(nb);placeBrk(nb)}
+    else S.breakers.push({id:uid('b'),panel:bform.panel,slot:bform.slot,slot2:bform.slot2,pole:bform.pole,...vals});
     bform=null;
   }
   else if(a==='bfDel'){
@@ -783,8 +776,8 @@ document.addEventListener('click',e=>{
     else if(!n){setStat('Enter a panel name.');changed=false}
     else{
       const cnt=S.panels.filter(q=>q.floor===cur).length;
-      const p={id:uid('p'),name:n,location:'',total:+$('bpTot').value||0,floor:cur,x:VW-PW-20,y:20+cnt*(PH+12)};
-      clampPanel(p);S.panels.push(p);
+      const p={id:uid('p'),num:nextPanelNum(),name:n,location:'',total:+$('bpTot').value||0,floor:cur,room:'',x:null,y:null};
+      S.panels.push(p);
     }
   }
   else if(a==='setupOpen'){openWiz();changed=false}
@@ -926,8 +919,8 @@ document.addEventListener('click',e=>{
   }
   else if(a==='addPanel'){
     const n=S.panels.filter(q=>q.floor===cur).length;
-    const p={id:uid('p'),name:$('pName').value.trim()||'Panel',location:$('pLoc').value.trim(),total:+$('pTot').value||0,floor:cur,x:VW-PW-20,y:20+n*(PH+12)};
-    clampPanel(p);S.panels.push(p);sel={kind:'panel',id:p.id};
+    const p={id:uid('p'),num:nextPanelNum(),name:$('pName').value.trim()||'Panel',total:+$('pTot').value||0,floor:cur,room:$('pRoom')?.value||'',x:null,y:null};
+    S.panels.push(p);placeDev(p);sel={kind:'panel',id:p.id};
   }
   else if(a==='addBreaker'){
     const slot=+$('bSlot').value;
@@ -943,7 +936,7 @@ document.addEventListener('click',e=>{
 });
 
 document.addEventListener('change',e=>{
-  if(e.target.id==='bfFloor'){$('bfRoom').innerHTML=roomOptsFor(+e.target.value,'');return}
+
   if(e.target.id==='skFile'){
     const f=e.target.files[0];e.target.value='';
     if(f){const img=new Image();img.onload=()=>{sk.img=img;sk.pts=[];skStage('scale')};img.src=URL.createObjectURL(f)}
@@ -993,7 +986,7 @@ document.addEventListener('change',e=>{
     }
   }
   if(sel.kind==='device'&&(f==='x'||f==='y'))clampDev(o);
-  if(sel.kind==='panel'){clampPanel(o)}
+  if(sel.kind==='panel'){if(f==='room')placeDev(o);if(f==='floor'){o.room='';o.x=null;o.y=null}}
   if(sel.kind==='room')S.devices.forEach(d=>{if(d.room===o.id&&d.x!=null)clampDev(d)});
   touch();render();
 });
@@ -1021,8 +1014,8 @@ svg.addEventListener('pointermove',e=>{
       const dx=tmp.x-o.x,dy=tmp.y-o.y;o.x=tmp.x;o.y=tmp.y;
       S.devices.forEach(d=>{if(d.room===o.id&&d.x!=null){d.x+=dx;d.y+=dy}});
     }
-  }else if(drag.k==='panel'||drag.k==='breaker'){
-    o.x=p.x-drag.dx;o.y=p.y-drag.dy;clampPanel(o);
+  }else if(drag.k==='panel'){
+    o.x=p.x-drag.dx;o.y=p.y-drag.dy;clampDev(o);
   }else{
     o.x=p.x-drag.dx;o.y=p.y-drag.dy;clampDev(o);
   }
