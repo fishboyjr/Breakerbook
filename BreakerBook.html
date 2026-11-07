@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>BreakerBook v42</title>
+<title>BreakerBook v43</title>
 
 <style>
 :root{color-scheme:light dark;--bg:#f5f5f3;--fg:#1d1d1f;--pn:#fff;--ln:#cfcfca;--ac:#2b6cb0}
@@ -97,7 +97,7 @@ textarea{width:100%;font:inherit;color:inherit;background:var(--bg);border:1px s
 .pgr{max-height:62vh;overflow:auto;padding-right:4px}
 @media(max-width:640px){.pg{grid-template-columns:1fr}.pgl{max-height:40vh}.pgr{max-height:none}}
 </style></head><body>
-<header><b>BreakerBook <span class="sm">v42</span></b>
+<header><b>BreakerBook <span class="sm">v43</span></b>
 <button data-act="open">Open file</button><button data-act="save">Save file</button><button data-act="printOpts">Print</button><button data-act="undo">Undo</button><button data-act="new">New</button>
 <input type="file" id="fIn" accept=".json,application/json" hidden><span class="sm" id="stat"></span></header>
 <main><div id="plan"><div id="tabs"></div><svg id="svg" viewBox="0 0 960 640"></svg><div id="bview"></div></div><aside id="side"></aside></main><div id="pdlg"><div class="box">
@@ -559,7 +559,7 @@ async function loadCV(){
   if(!(window.cv&&cv.Mat))await loadScript('https://cdn.jsdelivr.net/npm/@techstark/opencv-js@4.10.0-release.1/dist/opencv.js').catch(()=>loadScript('https://docs.opencv.org/4.10.0/opencv.js'));
   if(window.cv&&typeof cv.then==='function')window.cv=await cv;
   // OpenCV.js finishes starting up after its script loads; wait until its functions are ready.
-  await new Promise((res,rej)=>{const t0=Date.now();const check=()=>{if(window.cv&&cv.Mat)res();else if(Date.now()-t0>60000)rej(new Error('the room finder did not start within a minute'));else setTimeout(check,200)};check()});
+  await new Promise((res,rej)=>{const t0=Date.now();const check=()=>{if(window.cv&&cv.Mat)res();else if(Date.now()-t0>180000)rej(new Error('the room finder did not start within three minutes'));else setTimeout(check,200)};check()});
   window.cvReady=true;
 }
 function skStage(stage){
@@ -572,6 +572,7 @@ function skStage(stage){
   else if(stage==='scale')box.innerHTML=`<h3 style="margin:0">Set the scale</h3>
     <p class="sm">Tap both ends of a wall you have measured, then type its length in feet. Points tapped: ${sk.pts.length} of 2.</p>
     <canvas id="skc" style="width:100%;touch-action:none;border:1px solid var(--ln)"></canvas>
+    <p id="skMsg" class="sm"></p>
     <div class="row"><input id="skFt" type="number" placeholder="Length in feet"><button data-act="skDetect">Find rooms</button><button data-act="phCancel">Cancel</button></div>`;
   else box.innerHTML=`<h3 style="margin:0">Check the rooms found</h3>
     <p class="sm">Uncheck any outline that isn't a room, and name the rest. Sizes come from the scale.</p>
@@ -623,18 +624,29 @@ function detectRooms(canvas){
   out.sort((a,b)=>b.w*b.h-a.w*a.h);
   return out.filter((r,i)=>!out.slice(0,i).some(o=>r.x>=o.x&&r.y>=o.y&&r.x+r.w<=o.x+o.w&&r.y+r.h<=o.y+o.h));
 }
+function skMsg(t){const el=$('skMsg');if(el)el.textContent=t;else setStat(t)}
 async function skDetect(){
   const ft=+$('skFt').value;
-  if(sk.pts.length<2||!ft){setStat('Tap two points on a wall and enter its length.');return}
+  if(sk.pts.length<2){skMsg('Tap two points on a wall first.');return}
+  if(!ft){skMsg('Enter the wall length in feet.');return}
   const px=Math.hypot(sk.pts[0].x-sk.pts[1].x,sk.pts[0].y-sk.pts[1].y);
   sk.k=ft/px;
+  const t0=Date.now(),first=!window.cvReady;
+  const label=()=>(window.cvReady?'Finding rooms':(first?'Downloading the room finder (about 8 MB, first time only)':'Starting the room finder'))+'… '+Math.round((Date.now()-t0)/1000)+' s';
+  skMsg(label());
+  const tick=setInterval(()=>skMsg(label()),1000);
   try{
     await loadCV();
+    skMsg('Finding rooms…');
     const c=document.createElement('canvas');c.width=sk.img.width;c.height=sk.img.height;
     c.getContext('2d').drawImage(sk.img,0,0);
     sk.cands=detectRooms(c).map(r=>({...r,wf:clamp(Math.round(r.w*sk.k),1,200),hf:clamp(Math.round(r.h*sk.k),1,200)}));
+    clearInterval(tick);
     skStage('review');
-  }catch(err){alert('Room finder problem: '+((err&&err.message)||err)+'. Check the internet connection, then try again. If it keeps failing, try a clearer photo.');skStage('scale')}
+  }catch(err){
+    clearInterval(tick);
+    skMsg('Could not finish: '+((err&&err.message)||err)+'. Check the internet connection, then tap Find rooms again.');
+  }
 }
 function skAdd(){
   const s=sk.k*PX;let added=0,skipped=0;
