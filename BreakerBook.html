@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>BreakerBook v52</title>
+<title>BreakerBook v53</title>
 
 <style>
 :root{color-scheme:light dark;--bg:#f0f3f7;--pn:#fff;--bgi:#f4f6f9;--fg:#1b2733;--mut:#64748b;--ln:#dfe5ec;--ac:#0b7fc0;--act:#fff;--ac2:#e3f1fb;--wall:#8795a5;--rf:rgba(11,127,192,.05);--rfs:rgba(11,127,192,.13);--sh:0 1px 2px rgba(16,24,40,.05),0 2px 10px rgba(16,24,40,.05);--r:14px}
@@ -125,9 +125,29 @@ textarea{width:100%;font:inherit;color:inherit;background:var(--bgi);border:1px 
 .skhint{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:4px}
 .skhint img{height:34px;max-width:140px;border:1px solid var(--ln);border-radius:6px;background:#fff}
 .skhint button{min-height:30px;padding:3px 10px;border-radius:999px;font-size:12px}
+header{position:sticky;top:0;z-index:4}
+.brand{flex-wrap:wrap;gap:2px 10px}
+.tag{font-size:12.5px;color:var(--mut);font-weight:500}
+#modes{flex:1 0 100%;order:5;margin-top:2px}
+@media screen and (min-width:761px){html,body{height:100%;overflow:hidden}}
+.opt{display:grid;gap:2px;text-align:left;padding:12px 14px;border-radius:12px;min-height:56px;width:100%;justify-items:start}
+.opt b{font-weight:600}
+.opt span{font-weight:400;font-size:12px;color:var(--mut)}
+.phimg{display:block;max-width:100%;max-height:70px;border:1px solid var(--ln);border-radius:6px;background:#fff;margin-bottom:4px}
+.phrows{max-height:52vh;overflow:auto}
+#splash{position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:radial-gradient(120% 90% at 50% 0%,#12557f 0%,#0b2f4a 55%,#071a2a 100%);color:#fff;cursor:pointer;transition:opacity .45s ease,visibility .45s;text-align:center;padding:24px;-webkit-user-select:none;user-select:none}
+#splash.out{opacity:0;visibility:hidden}
+.spl-logo{width:96px;height:96px;border-radius:26px;background:linear-gradient(145deg,#38b6f5,#0b7fc0);display:grid;place-items:center;color:#fff;box-shadow:0 18px 50px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.35);animation:splpop .7s cubic-bezier(.2,.9,.3,1.2) both}
+#splash h1{font-size:40px;letter-spacing:-.02em;margin:14px 0 0;font-weight:700}
+#splash p{margin:0;font-size:17px;color:#b9d7ea}
+.spl-ver{margin-top:18px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#7fa7c2;border:1px solid rgba(255,255,255,.18);border-radius:999px;padding:4px 12px}
+.spl-hint{position:absolute;bottom:calc(36px + env(safe-area-inset-bottom,0px));font-size:13px;color:#8fb3cb;animation:splblink 2.2s ease-in-out infinite}
+@keyframes splpop{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes splblink{0%,100%{opacity:.35}50%{opacity:1}}
 </style></head><body>
-<header><div class="brand"><span class="logo"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M13.2 2 4.5 13.4h5.6L9 22l9.5-12h-5.8L13.2 2Z"/></svg></span><b>BreakerBook</b><span class="ver">v52</span></div>
+<header><div class="brand"><span class="logo"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M13.2 2 4.5 13.4h5.6L9 22l9.5-12h-5.8L13.2 2Z"/></svg></span><b>BreakerBook</b><span class="tag">Map your home's electrical system</span><span class="ver">v53</span></div>
 <div class="acts"><button data-act="open">Open file</button><button data-act="printOpts">Print</button><button data-act="undo">Undo</button><button data-act="new">New</button><button data-act="save">Save file</button></div>
+<nav class="seg" id="modes"></nav>
 <input type="file" id="fIn" accept=".json,application/json" hidden><span id="stat"></span></header>
 <main><div id="plan"><div id="tabs"></div><svg id="svg" viewBox="0 0 960 640"></svg><div id="bview"></div></div><aside id="side"></aside></main><div id="pdlg"><div class="box">
   <h3 style="margin:0">Print sheets</h3>
@@ -160,7 +180,8 @@ textarea{width:100%;font:inherit;color:inherit;background:var(--bgi);border:1px 
 <div id="phdlg"><div class="box" id="phbox"></div></div>
 <input type="file" id="phFile" accept="image/*" hidden>
 <input type="file" id="skFile" accept="image/*" hidden>
-<datalist id="roomNames"></datalist>
+<datalist id="roomNames"></datalist><datalist id="brkWords"></datalist>
+<div id="splash"><div class="spl-logo"><svg viewBox="0 0 24 24" width="52" height="52" fill="currentColor"><path d="M13.2 2 4.5 13.4h5.6L9 22l9.5-12h-5.8L13.2 2Z"/></svg></div><h1>BreakerBook</h1><p>Map your home's electrical system</p><span class="spl-ver">Version 53</span><div class="spl-hint">Tap anywhere to begin</div></div>
 <div id="print"></div>
 <script>
 const DT=['Outlet','Switch','Light','Fan','Fixture','Other'];
@@ -373,10 +394,11 @@ function bformHTML(){
     <select id="bfFeeds"><option value="">Feeds no subpanel</option>${S.panels.filter(q=>q.id!==bform.panel).map(q=>`<option value="${q.id}"${q.id===v.feedsPanel?' selected':''}>Feeds ${esc(q.name)}</option>`).join('')}</select></div>
     <div class="row"><button data-act="bfSave">Save</button>${b?'<button class="danger" data-act="bfDel">Delete</button>':''}${b&&b.slot2?`<button data-act="split" data-id="${b.id}">Split</button>`:''}<button data-act="bfCancel">Cancel</button></div>`;
 }
-function openWiz(){W={step:'floors',wantRooms:'0',rooms:[],panels:[],panelText:''};showWiz()}
+function openWiz(){W={step:'floors',rooms:[],panelRows:null,inSk:false,inPh:false,mIdx:0};showWiz()}
 function showWiz(step){if(step)W.step=step;document.querySelector('#sdlg .box').innerHTML=wizHTML();$('sdlg').classList.add('open')}
 function wizHTML(){
-  const nav=(next,act)=>`<div class="row">${W.step!=='floors'?'<button data-act="wizBack">Back</button>':''}<button data-act="${act}">${next}</button><button data-act="setupSkip">Skip rest</button></div>`;
+  const nav=(next,act)=>`<div class="row">${W.step!=='floors'?'<button data-act="wizBack">Back</button>':''}${next?`<button data-act="${act}">${next}</button>`:''}<button data-act="setupSkip">Skip rest</button></div>`;
+  const opt=(act,v,t,s)=>`<button class="opt" data-act="${act}" data-v="${v}"><b>${t}</b><span>${s}</span></button>`;
   if(W.step==='floors')return `<h3 style="margin:0">Set up your home</h3>
     <label class="sm">Basement?</label><select id="sBase"><option value="0">No</option><option value="1">Yes</option></select>
     <label class="sm">Floors above the basement (first floor = 1)</label><input id="sFl" type="number" min="1" max="5" value="2">
@@ -384,42 +406,69 @@ function wizHTML(){
     <label class="sm">Other powered buildings, separated by commas (e.g. Shed, Barn)</label><input id="sOther" placeholder="Leave blank if none">
     <div class="row"><button data-act="setupGo">Next</button><button data-act="setupSkip">Skip, I'll do it myself</button></div>`;
   if(W.step==='rooms')return `<h3 style="margin:0">Rooms</h3>
-    <label class="sm">Do you want to name the rooms on each floor?</label>
-    <select id="wRooms"><option value="0"${W.wantRooms!=='1'?' selected':''}>No</option><option value="1"${W.wantRooms==='1'?' selected':''}>Yes</option></select>
-    ${W.wantRooms==='1'?S.floors.map((f,i)=>`<label class="sm">${esc(f)}: separate rooms with commas. Add a size as "Kitchen 12x14" (width x length, ft). Rooms without a size are 10 x 10 ft.</label><textarea id="rt${i}" rows="2">${esc(W.rooms[i]||'')}</textarea>`).join(''):''}
+    <p class="sm">How do you want to set up the rooms?</p>
+    ${opt('wizRoomsPick','sketch','Use a drawing or sketch','Photograph a hand-drawn plan and I will find the rooms.')}
+    ${opt('wizRoomsPick','manual','Enter them now','Type the room names and sizes.')}
+    ${opt('wizRoomsPick','later','Create them later','Skip this and add rooms from the Rooms tab.')}
+    ${nav('','')}`;
+  if(W.step==='rsketch')return `<h3 style="margin:0">Rooms from a sketch</h3>
+    <p class="sm">Do one floor at a time. Choose a floor, photograph its plan, and check the rooms found.</p>
+    ${S.floors.map((f,i)=>`<div class="row"><span style="flex:2">${esc(f)} <span class="sm">${S.rooms.filter(r=>r.floor===i).length} room(s)</span></span><button data-act="wizSk" data-i="${i}">Import sketch</button></div>`).join('')}
+    ${nav('Next','wizNextPanels')}`;
+  if(W.step==='rmanual')return `<h3 style="margin:0">Enter rooms</h3>
+    ${S.floors.map((f,i)=>`<label class="sm">${esc(f)}: separate rooms with commas. Add a size as "Kitchen 12x14" (width x length, ft). Rooms without a size are 10 x 10 ft.</label><textarea id="rt${i}" rows="2">${esc(W.rooms[i]||'')}</textarea>`).join('')}
     ${nav('Next','wizRooms')}`;
   if(W.step==='panels'){
     if(!S.floors.length)return `<h3 style="margin:0">Panels</h3><p class="sm">Create your floors first. Panels and breakers need a floor.</p>${nav('Next','wizPanels')}`;
-    const rows=W.panelRows||[{name:'',location:'',total:'',floor:S.floors[0]}];
+    const rows=W.panelRows&&W.panelRows.length?W.panelRows:[{name:'',floor:0,room:''}];
     return `<h3 style="margin:0">Panels</h3>
-      <p class="sm">Add each panel and choose the floor it is on.</p>
-      ${rows.map((r,i)=>`<div class="pr"><input data-pn="${i}" placeholder="Name (e.g. Main)" value="${esc(r.name)}"><input data-pt="${i}" type="number" placeholder="Slots" value="${esc(r.total)}"><select data-pf="${i}">${S.floors.map(x=>`<option${x===r.floor?' selected':''}>${esc(x)}</option>`).join('')}</select></div>`).join('')}
+      <p class="sm">For each panel, enter its name, the floor, and the room on that floor.</p>
+      ${rows.map((r,i)=>`<div class="pr"><input data-pn="${i}" placeholder="Name (e.g. Main)" value="${esc(r.name)}"><select data-pf="${i}">${S.floors.map((x,j)=>`<option value="${j}"${j===r.floor?' selected':''}>${esc(x)}</option>`).join('')}</select><select data-pr="${i}">${panelRoomOpts(r.floor).replace(`value="${r.room}"`,`value="${r.room}" selected`)}</select></div>`).join('')}
       <div class="row"><button data-act="wizAddPanel">Add another panel</button></div>
       ${nav('Next','wizPanels')}`;
   }
-  return `<h3 style="margin:0">Breakers</h3>
-    ${W.panels.map((p,i)=>`<label class="sm">${esc(p.name)}: one line per breaker. Slot (as on the panel), amps, rooms or functions. Example: 13A, 20, Kitchen counter</label><textarea id="wb${i}" rows="4"></textarea>`).join('')}
-    ${nav('Finish','wizFinish')}`;
+  if(W.step==='bchoice')return `<h3 style="margin:0">Breakers</h3>
+    <p class="sm">How do you want to add the breakers? You can import a photo of the panel (amps), a photo of the written list (labels), or both.</p>
+    ${W.panelIds.map((id,i)=>{const p=S.panels.find(x=>x.id===id);if(!p)return '';const n=S.breakers.filter(b=>b.panel===id).length;return `<div class="card" style="padding:10px"><b>${esc(p.name)}</b> <span class="sm">${n} breaker${n===1?'':'s'}</span><div class="row"><button data-act="wizPhoto" data-i="${i}">Import from a photo</button><button data-act="wizManual" data-i="${i}">Enter them now</button></div></div>`}).join('')}
+    <div class="row"><button data-act="wizBack">Back</button><button data-act="wizFinish">Finish (add the rest later)</button></div>`;
+  const p=S.panels.find(x=>x.id===W.panelIds[W.mIdx]);
+  return `<h3 style="margin:0">Enter breakers: ${esc(p?p.name:'')}</h3>
+    <label class="sm">How many breaker slots does this panel have?</label>
+    <input id="wSlots" type="number" min="2" max="84" value="${(p&&p.total)||24}">
+    <label class="sm">One line per breaker: slot (as on the panel), amps, rooms or functions. Example: 13A, 20, Kitchen counter</label>
+    <textarea id="wbm" rows="5"></textarea>
+    <div class="row"><button data-act="wizManualSave">Save</button><button data-act="wizBack">Back</button></div>`;
 }
 function parseRooms(t){return t.split(',').map(x=>x.trim()).filter(Boolean).map(x=>{const m=x.match(/^(.*?)\s+(\d+(?:\.\d+)?)\s*[x×]\s*(\d+(?:\.\d+)?)$/i);return m?{name:m[1].trim(),w:clamp(+m[2],1,200),h:clamp(+m[3],1,200)}:{name:x,w:10,h:10}})}
-function readPanelRows(){return Array.from(document.querySelectorAll('[data-pn]'),(el,i)=>({name:el.value.trim(),total:document.querySelector(`[data-pt="${i}"]`)?.value||'',floor:document.querySelector(`[data-pf="${i}"]`)?.value||''}))}
-function parsePanels(t){return t.split('\n').map(l=>l.split(',').map(x=>x.trim())).filter(a=>a[0]).map(a=>({name:a[0],location:a[1]||'',total:+a[2]||0,floor:a[3]||''}))}
+function readPanelRows(){
+  const old=W.panelRows||[];
+  return Array.from(document.querySelectorAll('[data-pn]'),(el,i)=>({id:old[i]?.id||'',name:el.value.trim(),floor:+(document.querySelector(`[data-pf="${i}"]`)?.value||0),room:document.querySelector(`[data-pr="${i}"]`)?.value||''}));
+}
 function parseBrk(t){return t.split('\n').map(l=>l.split(',').map(x=>x.trim())).filter(a=>a[0]).map(a=>{const m=a[0].match(/^(\d+)\s*([ABab])?$/);return m?{slot:+m[1],pole:(m[2]||'').toUpperCase(),amps:(a[1]||'').replace(/a$/i,''),funcs:a.slice(2).join(', ')}:null}).filter(Boolean)}
-function finishWiz(){
-  if(!S.floors.length)W.panels=[];
-  if(W.wantRooms==='1')W.rooms.forEach((txt,i)=>parseRooms(txt).forEach(r=>addRoom(r.name,r.w,r.h,i)));
-  S.floors.forEach((f,i)=>ensureGarageRoom(i));
-  W.panels.forEach((p,i)=>{
-    const fi=Math.max(0,S.floors.findIndex(x=>x.toLowerCase()===(p.floor||'').toLowerCase()));
-    const cnt=S.panels.filter(q=>q.floor===fi).length;
-    const pn={id:uid('p'),num:nextPanelNum(),name:p.name,total:p.total,floor:fi,room:'',x:null,y:null};
-    S.panels.push(pn);
-    parseBrk($('wb'+i)?.value||'').forEach(b=>{
-      if(b.pole){pn.tandem=pn.tandem||{};pn.tandem[b.slot]=true}
-      S.breakers.push({id:uid('b'),panel:pn.id,slot:b.slot,pole:b.pole,amps:b.amps,type:'Standard',status:'used',label:b.funcs,funcs:b.funcs,feedsPanel:''});
-    });
+// Saves what was typed on the manual rooms step.
+function wizSaveRooms(){
+  if(W.step!=='rmanual')return;
+  S.floors.forEach((f,i)=>{const t=$('rt'+i)?.value||'';parseRooms(t).forEach(r=>addRoom(r.name,r.w,r.h,i))});
+  W.rooms=[];
+}
+// Creates or updates the panels typed on the panels step. Panels start with 24 slots; a photo can change that.
+function wizSavePanels(){
+  if(W.step!=='panels'||!document.querySelector('[data-pn]'))return;
+  const rows=readPanelRows();
+  rows.forEach(r=>{
+    if(!r.name)return;
+    let p=r.id&&S.panels.find(x=>x.id===r.id);
+    if(p){p.name=r.name;p.floor=r.floor;p.room=r.room}
+    else{p={id:uid('p'),num:nextPanelNum(),name:r.name,location:'',total:24,floor:r.floor,room:r.room,x:null,y:null};S.panels.push(p);placeDev(p);r.id=p.id}
   });
-  S.setupDone=true;cur=0;touch();
+  W.panelRows=rows;
+  W.panelIds=rows.filter(r=>r.id).map(r=>r.id);
+}
+function wizToPanels(){S.floors.forEach((f,i)=>ensureGarageRoom(i));showWiz('panels')}
+function wizReturn(){if(W&&W.inSk){W.inSk=false;showWiz('rsketch')}}
+function finishWiz(){
+  S.floors.forEach((f,i)=>ensureGarageRoom(i));
+  S.setupDone=true;if(cur>=S.floors.length)cur=0;touch();
   $('sdlg').classList.remove('open');render();
 }
 function renderBrk(){
@@ -522,8 +571,8 @@ function renderSide(){
     ${list(S.panels.filter(p=>!p.room),p=>`<div class="it ${sel?.id===p.id?'sel':''}" data-act="sel" data-kind="panel" data-id="${p.id}"><span>${pnum(p)} ${esc(p.name)}</span><span class="sm">${esc(S.floors[p.floor]||'')}</span></div>`)}
     <p class="sm">Add breakers in the Breakers tab.</p>`;
   const cards=body.split('<h3>').filter(x=>x.trim()).map(x=>`<section class="card"><h3>${x}</section>`).join('');
-  $('side').innerHTML=`<div class="seg">${m('floors','Floors')}${m('rooms','Rooms')}${m('devices','Devices')}${m('brk','Panels')}</div>
-    <div class="ctx">${info}</div><div class="edit card"><h3>${sel?'Edit '+sel.kind:'Edit'}</h3>${editor()}</div>${cards}`;
+  $('modes').innerHTML=`${m('floors','Floors')}${m('rooms','Rooms')}${m('brk','Panels')}${m('devices','Devices')}`;
+  $('side').innerHTML=`<div class="ctx">${info}</div><div class="edit card"><h3>${sel?'Edit '+sel.kind:'Edit'}</h3>${editor()}</div>${cards}`;
 }
 
 // Yes/Cancel confirmation; the action runs only if the user taps Yes.
@@ -531,45 +580,280 @@ let pendingYes=null;
 function askConfirm(msg,fn){pendingYes=fn;$('cmsg').textContent=msg;$('cdlg').classList.add('open')}
 // Outside libraries load only when needed (printing, for the QR code).
 function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=()=>rej(new Error('load failed'));document.head.appendChild(s)})}
-// Photo import (photo as a guide): the person types each label beside the photo. No text reader is used.
-let phPending=null,phCtx={panel:null,url:null};
+// Photo import (v53): two photo types. The person taps the four corners of the area, the app straightens it,
+// cuts it into rows, and suggests amps (panel photo) or labels (written list). Every row is shown beside its crop to confirm.
+let phPending=null,phCtx={panel:null,kind:'panel',wiz:false,img:null,src:null,pts:[],cols:2,numbering:'pairs',slots:24,note:'',rect:null,rows:[]};
+const AMP_WORDS=['15','20','25','30','35','40','45','50','60','70','80','90','100','110','125','150','175','200'];
+const BRK_WORDS=['RANGE','OVEN','STOVE','COOKTOP','FURNACE','HEAT','HEATER','AC','COOLING','KITCHEN','RECEPT','RECEPTACLE','RECEPTACLES','OUTLET','OUTLETS','GARAGE','OFFICE','LIGHT','LIGHTS','LTS','DRYER','WASHER','WASHING','MACHINE','REFRIGERATOR','FRIDGE','FREEZER','DISHWASHER','DISPOSAL','MICROWAVE','BEDROOM','BED','BATH','BATHROOM','LIVING','ROOM','DINING','FAMILY','BASEMENT','WATER','HEATER','PUMP','SUMP','WELL','OUTSIDE','EXTERIOR','PORCH','DECK','SMOKE','FAN','SPARE','HALL','LAUNDRY','WORKBENCH','SHOP','UTILITY','SINK','COUNTER','MASTER','GUEST','CLOSET','ATTIC','STAIRS','DOOR','DOORBELL','ALARM','TV','PANEL','SUB','MAIN','GFCI','GFI','MOTOR','AIR','CONDITIONER','HOT','TUB','POOL','SHED','EV','CHARGER'];
+const GLD={
+'0':[.55,[[.5,0],[.15,.1],[0,.35],[0,.65],[.15,.9],[.5,1],[.85,.9],[1,.65],[1,.35],[.85,.1],[.5,0]]],
+'1':[.35,[[0,.22],[.6,0],[.6,1]]],
+'2':[.55,[[0,.2],[.3,0],[.7,0],[1,.2],[1,.4],[0,1],[1,1]]],
+'3':[.55,[[0,.1],[.3,0],[.8,0],[1,.2],[1,.35],[.7,.5],[.35,.5]],[[.7,.5],[1,.65],[1,.85],[.7,1],[.3,1],[0,.9]]],
+'4':[.6,[[.7,1],[.7,0],[0,.7],[1,.7]]],
+'5':[.55,[[1,0],[.1,0],[0,.5],[.6,.4],[1,.6],[1,.85],[.6,1],[0,.9]]],
+'6':[.55,[[.9,.1],[.5,0],[.1,.3],[0,.7],[.2,1],[.7,1],[1,.8],[.9,.55],[.5,.45],[.1,.6]]],
+'7':[.55,[[0,0],[1,0],[.4,1]]],
+'8':[.55,[[.5,.5],[.1,.4],[.1,.1],[.5,0],[.9,.1],[.9,.4],[.5,.5],[.05,.65],[.05,.9],[.5,1],[.95,.9],[.95,.65],[.5,.5]]],
+'9':[.55,[[.1,.9],[.5,1],[.9,.7],[1,.3],[.8,0],[.4,0],[0,.2],[.1,.5],[.5,.55],[.9,.4]]]
+};
+
+// Straightens the four tapped corners (TL, TR, BR, BL) into a W-wide rectangle. Returns gray values and a color canvas.
+function rectify(src,pts,W){
+  const [tl,tr,br,bl]=pts,d=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+  const H=Math.max(60,Math.min(1800,Math.round(W*((d(tl,bl)+d(tr,br))/2)/Math.max(1,(d(tl,tr)+d(bl,br))/2))));
+  const sw=src.width,sh=src.height,sd=src.getContext('2d').getImageData(0,0,sw,sh).data;
+  const cv=document.createElement('canvas');cv.width=W;cv.height=H;
+  const cx=cv.getContext('2d'),out=cx.createImageData(W,H),g=new Float32Array(W*H);
+  const px=(x,y,c)=>sd[(y*sw+x)*4+c];
+  for(let y=0;y<H;y++){
+    const v=(y+.5)/H;
+    for(let x=0;x<W;x++){
+      const u=(x+.5)/W;
+      const X=(1-v)*((1-u)*tl.x+u*tr.x)+v*((1-u)*bl.x+u*br.x),Y=(1-v)*((1-u)*tl.y+u*tr.y)+v*((1-u)*bl.y+u*br.y);
+      const x0=clamp(Math.floor(X),0,sw-2),y0=clamp(Math.floor(Y),0,sh-2),fx=clamp(X-x0,0,1),fy=clamp(Y-y0,0,1);
+      const o=(y*W+x)*4;let lum=0;
+      for(let c=0;c<3;c++){
+        const val=(px(x0,y0,c)*(1-fx)+px(x0+1,y0,c)*fx)*(1-fy)+(px(x0,y0+1,c)*(1-fx)+px(x0+1,y0+1,c)*fx)*fy;
+        out.data[o+c]=val;lum+=val*[.299,.587,.114][c];
+      }
+      out.data[o+3]=255;g[y*W+x]=lum;
+    }
+  }
+  cx.putImageData(out,0,0);
+  return {W,H,g,cv};
+}
+// Counts the rows in one column from the repeating pattern of horizontal edges (ruled lines or handle edges).
+function estimateRows(g,W,H,cols){
+  const x1=cols===2?Math.floor(W/2):W,p=new Float32Array(H);
+  for(let y=1;y<H-1;y++){let s=0;for(let x=0;x<x1;x++)s+=Math.abs(g[(y+1)*W+x]-g[(y-1)*W+x]);p[y]=s/x1}
+  let mean=0;for(const v of p)mean+=v/H;for(let i=0;i<H;i++)p[i]-=mean;
+  let v0=0;for(const v of p)v0+=v*v;v0/=H;if(v0<=0)return null;
+  const lo=Math.max(4,Math.floor(H/24)),hi=Math.floor(H/3),ac=[];
+  for(let l=lo;l<=hi;l++){let s=0;for(let y=0;y+l<H;y++)s+=p[y]*p[y+l];ac[l]=s/(H-l)/v0}
+  let best=-1,bl=0;for(let l=lo;l<=hi;l++)if(ac[l]>best){best=ac[l];bl=l}
+  if(best<0.18)return null;
+  // the first strong peak is the true row height; longer lags are multiples of it
+  for(let l=lo+1;l<bl;l++)if(ac[l]>=0.8*best&&ac[l]>=ac[l-1]&&ac[l]>=(ac[l+1]||0)){bl=l;break}
+  const R=Math.round(H/bl);
+  return R>=3&&R<=24?R:null;
+}
+function slotFor(r,col,R,cols,numbering){
+  if(cols===1)return r+1;
+  if(numbering==='pairs')return 2*r+1+col;
+  return col*R+r+1;
+}
+// Digits that touch each other come out as one wide mark: cut it where the ink is thinnest.
+function splitGlued(c,W){
+  const n=c.w>1.75*c.h?3:2,col=new Float32Array(c.w);
+  for(const q of c.pix){col[(q%W)-c.x0]++}
+  const cuts=[];
+  for(let k=1;k<n;k++){
+    const mid=c.w*k/n,lo=Math.max(1,Math.floor(mid-c.w*0.2/n*2)),hi=Math.min(c.w-2,Math.ceil(mid+c.w*0.2/n*2));
+    let bx=Math.round(mid),bv=1e9;for(let x=lo;x<=hi;x++)if(col[x]<bv){bv=col[x];bx=x}
+    cuts.push(bx+c.x0);
+  }
+  const parts=Array.from({length:n},()=>({x0:1e9,y0:1e9,x1:-1,y1:-1,pix:[]}));
+  for(const q of c.pix){
+    const x=q%W,y=(q-x)/W;let k=0;while(k<cuts.length&&x>cuts[k])k++;
+    const P=parts[k];P.pix.push(q);if(x<P.x0)P.x0=x;if(x>P.x1)P.x1=x;if(y<P.y0)P.y0=y;if(y>P.y1)P.y1=y;
+  }
+  return parts.filter(P=>P.pix.length>=6).map(P=>({...P,w:P.x1-P.x0+1,h:P.y1-P.y0+1}));
+}
+// Reads the amps printed on a handle: finds digit-sized marks (dark on light or light on dark) and compares them with common amp sizes.
+function readAmps(g,w,h){
+  let best=null;
+  for(const pol of [0,1]){
+    const gg=pol?g.map(v=>255-v):g;
+    const dark=localDarkMask(gg,w,h,Math.max(6,Math.round(h*.25)),35);
+    let comps=[];
+    for(const c of markComponents(dark,w,h)){
+      if(!(c.h>=0.22*h&&c.h<=0.85*h&&c.pix.length>=8&&c.x0>0&&c.y0>0&&c.x1<w-1&&c.y1<h-1))continue;
+      if(c.w<=1.0*c.h){comps.push(c);continue}
+      if(c.w>2.6*c.h)continue;
+      comps.push(...splitGlued(c,w));
+    }
+    comps.sort((a,b)=>a.x0-b.x0);
+    const groups=[];
+    for(const c of comps){
+      const gr=groups.find(G=>{const l=G[G.length-1],hh=Math.max(l.h,c.h);return c.x0-l.x1<=0.9*hh&&Math.abs((c.y0+c.y1)/2-(l.y0+l.y1)/2)<=0.35*hh&&Math.min(l.h,c.h)/hh>=0.65});
+      if(gr)gr.push(c);else groups.push([c]);
+    }
+    for(const G of groups){
+      if(G.length<2||G.length>3)continue;
+      const pieces=G.map(c=>({x0:c.x0,y0:c.y0,x1:c.x1,y1:c.y1,pix:c.pix}));
+      const ink=G.reduce((s,c)=>s+c.pix.length,0);
+      const rk=AMP_WORDS.filter(a=>a.length===G.length).map(a=>({word:a,score:-a.split('').reduce((t,ch,k)=>t+digitCost(pieces[k],ch,w),0)/a.length})).sort((a,b)=>b.score-a.score);
+      if(!rk.length)continue;
+      const cand={rk,ink,margin:rk[0].score-(rk[1]?rk[1].score:-1)};
+      if(!best||cand.rk[0].score>best.rk[0].score)best=cand;
+    }
+  }
+  if(!best)return null;
+  return {top:best.rk.slice(0,3).map(r=>r.word),sure:best.rk[0].score>-0.35&&best.margin>=0.05};
+}
+let _digitT=null;
+// Printed digit shapes, drawn with the device's own bold and regular sans fonts.
+function digitTemplates(){
+  if(_digitT)return _digitT;
+  _digitT={};
+  for(const ch of '0123456789'){
+    _digitT[ch]=[];
+    for(const font of ['bold 60px Helvetica, Arial, sans-serif','60px Helvetica, Arial, sans-serif','bold 60px monospace','bold 60px "DejaVu Sans", Verdana, sans-serif']){
+      const cv=document.createElement('canvas');cv.width=90;cv.height=100;const x=cv.getContext('2d');
+      x.fillStyle='#fff';x.fillRect(0,0,90,100);x.fillStyle='#000';x.font=font;x.textBaseline='alphabetic';x.fillText(ch,15,75);
+      const d=x.getImageData(0,0,90,100).data,a=new Float32Array(90*100);
+      for(let i=0;i<a.length;i++)a[i]=d[i*4]<128?1:0;
+      const bx=inkBox(a,90,100,.5);if(!bx)continue;
+      _digitT[ch].push({aspect:bx.w/bx.h,g:toGrid(a,90,100,bx.x,bx.y,bx.w,bx.h,LG_W,LG_H)});
+    }
+  }
+  return _digitT;
+}
+function digitCost(P,ch,W){
+  const pg=P._g||(P._g=pieceGrid(P,W));let best=9;
+  for(const t of digitTemplates()[ch]){const c=gridDist(pg.g,t.g)*3+0.25*Math.abs(Math.log(pg.aspect/t.aspect));if(c<best)best=c}
+  return best;
+}
+// Reads the handwriting on one list row. Returns {blank, text, sure, chips}.
+function readListRow(g,w,h){
+  const dark=localDarkMask(g,w,h,20,14);
+  const cut=stripLongRuns(dark,w,h,Math.max(40,Math.round(1.4*h)));
+  let comps=markComponents(cut,w,h).filter(c=>c.pix.length>=6&&c.h>=0.18*h&&c.h<=0.95*h&&c.x1>0.14*w);
+  let ink=0;for(const c of comps)ink+=c.pix.length;
+  if(ink<0.012*w*h||!comps.length)return {blank:true,text:'',sure:false,chips:[]};
+  const pieces=mergePieces(comps,w),bank=inkBank();
+  const hs=pieces.map(p=>p.y1-p.y0+1).sort((a,b)=>a-b),href=hs[Math.floor(hs.length*.6)]||h*.5;
+  const words=[];let cur=[];
+  pieces.forEach((p,i)=>{if(i&&p.x0-pieces[i-1].x1>0.7*href){words.push(cur);cur=[]}cur.push(p)});
+  if(cur.length)words.push(cur);
+  const vocab=BRK_WORDS.concat(ROOM_WORDS.filter(x=>x.indexOf(' ')<0&&!BRK_WORDS.includes(x)),inkWords.filter(x=>x.indexOf(' ')<0));
+  const out=[];let allSure=true,chips=[];
+  words.forEach((wp,i)=>{
+    if(wp.length<2){allSure=false;out.push('?');return}
+    const rk=rankLetters(wp,vocab,bank,w),top=rk[0],sc=top.score,mg=sc-rk[1].score;
+    if(sc>-0.30&&mg>=0.04){out.push(titleCase(top.word))}else{out.push('?');allSure=false}
+    if(i===0)chips=rk[0].score>-0.36?rk.slice(0,3).map(r=>titleCase(r.word)):[];
+  });
+  const known=out.filter(x=>x!=='?');
+  return {blank:false,text:known.length?out.join(' ').replace(/(\s\?)+$/,'').trim():'',sure:allSure&&known.length===out.length,chips};
+}
+function phBuildRows(){
+  const r=phCtx.rect,cols=phCtx.cols,R=cols===2?Math.ceil(phCtx.slots/2):phCtx.slots;
+  const rows=[],cw=Math.floor(r.W/cols),rh=r.H/R,cx=r.cv.getContext('2d');
+  for(let col=0;col<cols;col++)for(let i=0;i<R;i++){
+    const slot=slotFor(i,col,R,cols,phCtx.numbering);
+    if(slot>phCtx.slots)continue;
+    const x0=col*cw,y0=Math.round(i*rh),h=Math.max(8,Math.round(rh)),w=cw;
+    const g=new Float32Array(w*h);
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++)g[y*w+x]=r.g[Math.min(r.H-1,y0+y)*r.W+x0+x];
+    let read=null;
+    try{read=phCtx.kind==='panel'?readAmps(g,w,h):readListRow(g,w,h)}catch(e){read=null}
+    const cv=document.createElement('canvas'),k=Math.min(1,300/w);cv.width=Math.round(w*k);cv.height=Math.round(h*k);
+    cv.getContext('2d').drawImage(r.cv,x0,y0,w,h,0,0,cv.width,cv.height);
+    rows.push({slot,col,i,read,crop:cv.toDataURL('image/jpeg',0.7),next:slotFor(i+1,col,R,cols,phCtx.numbering),hasNext:i+1<R});
+  }
+  rows.sort((a,b)=>a.slot-b.slot);
+  phCtx.rows=rows;
+}
+function phProcess(){
+  const pts=phCtx.pts;if(pts.length<4)return;
+  const W=phCtx.cols===2?1000:600;
+  phCtx.rect=rectify(phCtx.src,pts,W);
+  const R=estimateRows(phCtx.rect.g,phCtx.rect.W,phCtx.rect.H,phCtx.cols);
+  if(R){phCtx.slots=phCtx.cols===2?R*2:R;phCtx.note=`Counted ${phCtx.slots} slots in the photo. Change the number if that is wrong.`}
+  else{phCtx.slots=phCtx.panel&&phCtx.panel.total?phCtx.panel.total:24;phCtx.note=`I could not count the slots from the photo, so I used ${phCtx.slots}. How many slots does this panel have? Change the number if needed.`}
+  phBuildRows();phStage('rows');
+}
 function phStage(stage){
   const box=$('phbox');
-  box.classList.toggle('wide',stage==='guide');
+  box.classList.toggle('wide',stage==='corners'||stage==='rows'||stage==='conflicts');
+  const kindName=phCtx.kind==='panel'?'panel photo (amps)':'written list (labels)';
   if(stage==='pick'){
     box.innerHTML=`<h3 style="margin:0">Import breakers from a photo</h3>
-      <p class="sm">Choose the panel, then the photo. You type each label beside the photo, so no text reader is used. The photo stays on this iPad and is not uploaded.</p>
-      <select id="phPanel">${S.panels.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select>
-      <div class="row"><button data-act="phChoose">Choose photo</button><button data-act="phCancel">Cancel</button></div>`;
-  }else if(stage==='guide'){
-    const p=phCtx.panel,n=p.total||0;
-    let rows='';
-    for(let i=1;i<=n;i++){
-      const ex=S.breakers.find(x=>x.panel===p.id&&(x.slot===i||x.slot2===i));
-      rows+=`<div class="row" style="margin:2px 0"><span class="sn" style="flex:0 0 28px">${i}</span><input data-sl="${i}" placeholder="${ex?'Now: '+esc(bnum(ex))+' '+esc(ex.label):'Label or rooms'}" style="flex:3"><input data-am="${i}" placeholder="Amps" style="flex:1"></div>`;
-    }
-    box.innerHTML=`<h3 style="margin:0">Photo guide: ${esc(p.name)}</h3>
-      <p class="sm">Type the label for each slot that matches the photo. Leave a slot blank if it's empty. Amps can be left blank.</p>
-      <div class="pg">
-        <div class="pgl"><img src="${phCtx.url}" alt="Panel photo"></div>
-        <div class="pgr">${rows||'<p class="sm">This panel has no slots. Set its total slots first.</p>'}</div>
-      </div>
-      <div class="row"><button data-act="phApply">Add breakers</button><button data-act="phCancel">Cancel</button></div>`;
+      <p class="sm">The photo stays on this iPad and is not uploaded. You can import both photos for the same panel: the amps from the panel, then the labels from the list.</p>
+      ${phCtx.panel&&phCtx.wiz?`<p class="sm"><b>${esc(phCtx.panel.name)}</b></p>`:`<select id="phPanel">${S.panels.map(p=>`<option value="${p.id}"${phCtx.panel&&phCtx.panel.id===p.id?' selected':''}>${esc(p.name)}</option>`).join('')}</select>`}
+      <button class="opt" data-act="phType" data-v="panel"><b>Photo of the panel</b><span>Door open. Reads the amps printed on the breaker handles.</span></button>
+      <button class="opt" data-act="phType" data-v="list"><b>Photo of the written list</b><span>Usually inside the door. Reads the labels beside each number.</span></button>
+      <div class="row"><button data-act="phCancel">Cancel</button></div>`;
+  }else if(stage==='corners'){
+    const tip=phCtx.kind==='panel'
+      ?'Tap the four corners around all the breaker handles: top-left, top-right, bottom-right, bottom-left. Start at the top of the first row and end at the bottom of the last row. Include both columns.'
+      :'Tap the four corners around the list rows: top-left, top-right, bottom-right, bottom-left. Start at the first row (not the title) and end at the bottom of the last row. Include both columns.';
+    const n=phCtx.pts.length;
+    box.innerHTML=`<h3 style="margin:0">Mark the area</h3><p class="sm">${tip} Taps: ${n} of 4.</p>
+      <canvas id="phc" style="display:block;max-width:100%;max-height:56vh;margin:0 auto;touch-action:none;border:1px solid var(--ln);border-radius:10px"></canvas>
+      <div class="row"><label class="sm" style="flex:1">Columns<select id="phCols"><option value="2"${phCtx.cols===2?' selected':''}>Two columns</option><option value="1"${phCtx.cols===1?' selected':''}>One column</option></select></label></div>
+      <div class="row"><button data-act="phRead"${n<4?' disabled':''}>Read the photo</button><button data-act="phReset">Reset taps</button><button data-act="phCancel">Cancel</button></div>`;
+    drawPhc();
+  }else if(stage==='rows'){
+    const isP=phCtx.kind==='panel';
+    box.innerHTML=`<h3 style="margin:0">Check each row</h3>
+      <p class="sm">${esc(phCtx.note)} ${isP?'Amps in the box were read confidently; the buttons are other likely values. Check each against the crop, and leave a row blank if it has no breaker.':'I cut out each row beside its number, but I cannot reliably read handwriting on a list yet, so type each label. Printed text may be suggested, and rows that look empty are marked.'}</p>
+      <div class="row"><label class="sm" style="flex:1">Slots<input id="phSlots" type="number" min="2" max="84" value="${phCtx.slots}"></label>
+      ${phCtx.cols===2?`<label class="sm" style="flex:2">Numbering<select id="phNum"><option value="pairs"${phCtx.numbering==='pairs'?' selected':''}>Left and right pairs (1 and 2, then 3 and 4)</option><option value="cols"${phCtx.numbering==='cols'?' selected':''}>Down the left, then the right (1-${Math.ceil(phCtx.slots/2)}, then ${Math.ceil(phCtx.slots/2)+1}-${phCtx.slots})</option></select></label>`:''}</div>
+      <div class="phrows">${phCtx.rows.map((r,i)=>{
+        const rd=r.read;
+        if(isP){
+          const sure=rd&&rd.sure?rd.top[0]:'';
+          const chips=(rd?rd.top:[]).concat(['15','20','30','40','50']).filter((v,j,a)=>a.indexOf(v)===j).slice(0,6);
+          return `<div class="skrow"><span class="sn">${r.slot}</span><div class="skmain"><img class="phimg" src="${r.crop}" alt="Row ${r.slot}">
+            <div class="row"><input data-pa="${i}" type="number" inputmode="numeric" placeholder="Amps" value="${esc(sure)}" style="flex:1"><label class="sm" style="flex:2;white-space:nowrap"><input type="checkbox" data-p2="${i}" style="width:auto"> 2-pole (also uses slot ${r.next})</label></div>
+            <div class="skhint">${chips.map(v=>`<button class="tg" data-act="phAmp" data-i="${i}" data-v="${v}">${v}A</button>`).join('')}</div></div></div>`;
+        }
+        const val=rd&&rd.sure?rd.text:'';
+        const chips=(rd&&!rd.blank?rd.chips:[]);
+        return `<div class="skrow"><span class="sn">${r.slot}</span><div class="skmain"><img class="phimg" src="${r.crop}" alt="Row ${r.slot}">
+          <div class="row"><input data-pl="${i}" list="brkWords" placeholder="${rd&&rd.blank?'(looks blank)':'Label'}" value="${esc(val)}" style="flex:2"><input data-pm="${i}" type="number" inputmode="numeric" placeholder="Amps" style="flex:1"></div>
+          ${i>0?`<div class="skhint"><button class="tg" data-act="phSame" data-i="${i}">Same as above</button></div>`:''}
+          ${!val&&rd&&rd.text?`<div class="skhint"><span class="sm">Partly read:</span><button class="tg" data-act="phLab" data-i="${i}" data-v="${esc(rd.text)}">${esc(rd.text)}</button></div>`:''}
+          ${chips.length?`<div class="skhint">${chips.map(v=>`<button class="tg" data-act="phLab" data-i="${i}" data-v="${esc(v)}">${esc(v)}</button>`).join('')}</div>`:''}</div></div>`;
+      }).join('')}</div>
+      <div class="row"><button data-act="phApply">Add breakers</button><button data-act="phBackCorners">Redo corners</button><button data-act="phCancel">Cancel</button></div>`;
   }else if(stage==='conflicts'){
     const cf=phPending.conflicts;
     box.innerHTML=`<h3 style="margin:0">Slots already in use</h3>
-      <p class="sm">These slots already have a breaker. Choose Update to replace its amps or name with the photo's, or Skip to keep the current one.</p>
-      ${cf.map((c,i)=>`<div class="row"><span style="flex:2"><b>${esc(bnum(c.ex))}</b> now: ${esc(c.ex.amps)}A ${esc(c.ex.label)}<br><span class="sm">Photo: ${esc(c.b.slot)}, ${esc(c.b.amps||'no amps')}, ${esc(c.b.funcs)}</span></span><select data-cf="${i}"><option value="skip">Skip</option><option value="update">Update</option></select></div>`).join('')}
+      <p class="sm">These slots already have different details. Choose Update to use the photo's, or Skip to keep what is there.</p>
+      ${cf.map((c,i)=>`<div class="row"><span style="flex:2"><b>${esc(bnum(c.ex))}</b> now: ${esc(c.ex.amps)}A ${esc(c.ex.label)}<br><span class="sm">Photo: ${esc(c.b.slot)}, ${esc(c.b.amps||'no amps')}, ${esc(c.b.funcs||'no label')}</span></span><select data-cf="${i}"><option value="skip">Skip</option><option value="update">Update</option></select></div>`).join('')}
       <div class="row"><button data-act="phConfirm">Apply choices</button><button data-act="phAll">Update all</button></div>`;
   }
 }
-function openPhoto(){
-  if(!S.panels.length){alert('Add a panel first.');return}
-  phCtx={panel:null,url:null};phStage('pick');$('phdlg').classList.add('open');
+function drawPhc(){
+  const c=$('phc');if(!c||!phCtx.src)return;
+  const s=phCtx.src;c.width=s.width;c.height=s.height;
+  const x=c.getContext('2d');x.drawImage(s,0,0);
+  const lw=Math.max(3,c.width/300),P=phCtx.pts;
+  x.strokeStyle='#e8590c';x.fillStyle='#e8590c';x.lineWidth=lw;x.font=`bold ${Math.round(c.width/30)}px sans-serif`;
+  if(P.length>1){x.beginPath();P.forEach((p,i)=>i?x.lineTo(p.x,p.y):x.moveTo(p.x,p.y));if(P.length===4)x.closePath();x.stroke()}
+  P.forEach((p,i)=>{x.beginPath();x.arc(p.x,p.y,lw*2.6,0,Math.PI*2);x.fill();x.fillText(String(i+1),p.x+lw*3,p.y-lw*3)});
 }
-function showPhotoGuide(f){phCtx.url=URL.createObjectURL(f);phStage('guide')}
+function phTap(e){
+  if(phCtx.pts.length>=4)return;
+  const c=$('phc'),r=c.getBoundingClientRect();
+  phCtx.pts.push({x:(e.clientX-r.left)*c.width/r.width,y:(e.clientY-r.top)*c.height/r.height});
+  phStage('corners');
+}
+function openPhoto(panelId,wiz){
+  if(!S.panels.length){alert('Add a panel first.');return}
+  phCtx={panel:S.panels.find(p=>p.id===panelId)||null,kind:'panel',wiz:!!wiz,img:null,src:null,pts:[],cols:2,numbering:'pairs',slots:24,note:'',rect:null,rows:[]};
+  if(!phCtx.panel&&curPanel)phCtx.panel=S.panels.find(p=>p.id===curPanel)||null;
+  phStage('pick');$('phdlg').classList.add('open');
+}
+function phLoad(f){
+  const img=new Image();
+  img.onload=()=>{
+    const k=Math.min(1,1800/Math.max(img.width,img.height)),cv=document.createElement('canvas');
+    cv.width=Math.round(img.width*k);cv.height=Math.round(img.height*k);
+    cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+    phCtx.src=cv;phCtx.pts=[];phCtx.cols=2;phCtx.numbering=phCtx.kind==='panel'?'pairs':'cols';phStage('corners');
+  };
+  img.src=URL.createObjectURL(f);
+}
+function phReturn(){if(phCtx.wiz&&W&&W.inPh){W.inPh=false;showWiz('bchoice')}}
 function addPhotoBreaker(p,b){
-  S.breakers.push({id:uid('b'),panel:p.id,slot:b.slot,pole:b.pole||'',amps:b.amps,type:'Standard',status:'used',label:b.funcs,funcs:b.funcs,feedsPanel:''});
+  const nb={id:uid('b'),panel:p.id,slot:b.slot,pole:b.pole||'',amps:b.amps||'',type:'Standard',status:'used',label:b.funcs||'',funcs:b.funcs||'',feedsPanel:''};
+  if(b.slot2)nb.slot2=b.slot2;
+  S.breakers.push(nb);
 }
 function updateFromPhoto(ex,b){
   if(b.amps)ex.amps=b.amps;
@@ -578,20 +862,36 @@ function updateFromPhoto(ex,b){
 function finishPhoto(added,updated){
   $('phdlg').classList.remove('open');phPending=null;
   setStat(`Added ${added}${updated?`, updated ${updated}`:''}. Import another photo to add more.`);
+  phReturn();
 }
 function applyGuide(){
   const p=phCtx.panel;if(!p)return;
-  const conflicts=[];let added=0;
-  for(let i=1;i<=(p.total||0);i++){
-    const label=(document.querySelector(`[data-sl="${i}"]`)?.value||'').trim();
-    const amps=(document.querySelector(`[data-am="${i}"]`)?.value||'').trim().replace(/a$/i,'');
-    if(!label&&!amps)continue;
-    const b={slot:i,pole:'',amps,funcs:label};
-    const ex=S.breakers.find(x=>x.panel===p.id&&(x.slot===i||x.slot2===i));
-    if(ex)conflicts.push({b,ex});else{addPhotoBreaker(p,b);added++}
+  const isP=phCtx.kind==='panel',items=[],used=new Set();
+  phCtx.rows.forEach((r,i)=>{
+    if(used.has(r.slot))return;
+    if(isP){
+      const amps=(document.querySelector(`[data-pa="${i}"]`)?.value||'').trim().replace(/a$/i,'');
+      if(!amps)return;
+      const b={slot:r.slot,pole:'',amps,funcs:''};
+      if(document.querySelector(`[data-p2="${i}"]`)?.checked&&r.hasNext){b.slot2=r.next;used.add(r.next)}
+      items.push(b);
+    }else{
+      const label=(document.querySelector(`[data-pl="${i}"]`)?.value||'').trim();
+      const amps=(document.querySelector(`[data-pm="${i}"]`)?.value||'').trim().replace(/a$/i,'');
+      if(!label&&!amps)return;
+      items.push({slot:r.slot,pole:'',amps,funcs:label});
+    }
+  });
+  p.total=Math.max(p.total||0,phCtx.slots);
+  const conflicts=[];let added=0,updated=0;
+  for(const b of items){
+    const ex=S.breakers.find(x=>x.panel===p.id&&(x.slot===b.slot||x.slot2===b.slot));
+    if(!ex){addPhotoBreaker(p,b);added++;continue}
+    const differs=(b.amps&&ex.amps&&String(ex.amps)!==String(b.amps))||(b.funcs&&ex.funcs&&ex.funcs!==b.funcs&&ex.label!==b.funcs);
+    if(differs)conflicts.push({b,ex});else{updateFromPhoto(ex,b);updated++}
   }
   if(conflicts.length){phPending={p,conflicts,added};phStage('conflicts');return}
-  finishPhoto(added,0);
+  finishPhoto(added,updated);
 }
 
 // Sketch import (Floors mode): finds closed room outlines in a photo of a hand-drawn plan.
@@ -842,6 +1142,7 @@ X:[.62,[[0,0],[1,1]],[[1,0],[0,1]]],
 Y:[.62,[[0,0],[.5,.5],[1,0]],[[.5,.5],[.5,1]]],
 Z:[.58,[[0,0],[1,0],[0,1],[1,1]]]
 };
+Object.assign(GL,GLD);
 const ROOM_WORDS0=['KITCHEN','BATH','BATHROOM','BEDROOM','BED','OFFICE','LIVING','ROOM','HALL','HALLWAY','DINING','LAUNDRY','GARAGE','UTILITY','STORAGE','FINISHED','FRONT','CLOSET','BASEMENT','FAMILY','MASTER','GUEST','STUDY','DEN','PANTRY','MUD','ENTRY','FOYER','PORCH','DECK','ATTIC','SHOP','WORKSHOP','MECHANICAL','FURNACE','SUNROOM','GREAT','PLAY','GAME','MEDIA','LIBRARY','LOFT','STAIRS','MAIN','HALF','POWDER','TOILET','WC','NOOK','COMMON','REAR','BACK','UNFINISHED','CRAWL','SPACE','COLD','WINE','CELLAR','GYM','SHED','BARN','LAB','SUITE','KIDS','NURSERY','SEWING','CRAFT','MUSIC','THEATER','BAR'];
 const ROOM_PHRASES=['LIVING ROOM','FRONT ROOM','FAMILY ROOM','MASTER BEDROOM','MASTER BATH','GAME ROOM','PLAY ROOM','GREAT ROOM','MUD ROOM','HALF BATH','LAUNDRY ROOM','DINING ROOM','POWDER ROOM','WINE CELLAR','CRAWL SPACE','COLD ROOM'];
 const ROOM_WORDS=ROOM_WORDS0.concat(ROOM_PHRASES);
@@ -1169,6 +1470,7 @@ function skAdd(){
   });
   $('phdlg').classList.remove('open');
   setStat(`Added ${added} room${added===1?'':'s'}${skipped?`; skipped ${skipped} that overlap existing rooms`:''}.`);
+  wizReturn();
 }
 
 // Irregular rooms: corner-by-corner drawing, corner editing, and exact outline checks for overlaps.
@@ -1242,6 +1544,7 @@ function render(){
 
 document.addEventListener('click',e=>{
   if(e.target.id==='skc'){skTap(e);return}
+  if(e.target.id==='phc'){phTap(e);return}
   const t=e.target.closest('[data-act]');if(!t)return;
   const a=t.dataset.act,id=t.dataset.id,k=t.dataset.kind;
   let changed=true;
@@ -1304,12 +1607,7 @@ document.addEventListener('click',e=>{
   else if(a==='setupOpen'){openWiz();changed=false}
   else if(a==='setupSkip'){
     if(W.step==='floors'){S.setupDone=true;$('sdlg').classList.remove('open');changed=false}
-    else{
-      // Keep whatever was typed on the current step and on earlier steps.
-      if(W.step==='rooms'&&W.wantRooms==='1')W.rooms=S.floors.map((f,i)=>$('rt'+i)?.value||'');
-      if(W.step==='panels'&&document.querySelector('[data-pn]')){W.panelRows=readPanelRows();W.panels=W.panelRows.filter(r=>r.name)}
-      finishWiz();return;
-    }
+    else{wizSaveRooms();wizSavePanels();finishWiz();return}
   }
   else if(a==='setupGo'){
     const names=[];
@@ -1323,18 +1621,43 @@ document.addEventListener('click',e=>{
     names.forEach(x=>{if(!S.floors.includes(x))S.floors.push(x)});
     cur=0;showWiz('rooms');return;
   }
-  else if(a==='wizRooms'){
-    if(W.wantRooms==='1')W.rooms=S.floors.map((f,i)=>$('rt'+i)?.value||'');
-    showWiz('panels');return;
+  else if(a==='wizRoomsPick'){
+    const v=t.dataset.v;
+    if(v==='sketch')showWiz('rsketch');else if(v==='manual')showWiz('rmanual');else wizToPanels();
+    return;
+  }
+  else if(a==='wizNextPanels'){wizToPanels();return}
+  else if(a==='wizRooms'){wizSaveRooms();wizToPanels();return}
+  else if(a==='wizSk'){
+    cur=+t.dataset.i;W.inSk=true;$('sdlg').classList.remove('open');
+    sk={mode:'pick',img:null,pts:[],k:0,cands:[]};$('phdlg').classList.add('open');skStage('pick');render();return;
   }
   else if(a==='wizPanels'){
     if(!S.floors.length){alert('Create your floors first, in the Floors mode.');return}
-    W.panelRows=readPanelRows();W.panels=W.panelRows.filter(r=>r.name);
-    if(!W.panels.length){finishWiz();return}
-    showWiz('breakers');return;
+    wizSavePanels();
+    if(!W.panelIds||!W.panelIds.length){finishWiz();return}
+    showWiz('bchoice');return;
   }
-  else if(a==='wizAddPanel'){W.panelRows=readPanelRows();W.panelRows.push({name:'',location:'',total:'',floor:S.floors[0]});showWiz('panels');return}
-  else if(a==='wizBack'){showWiz({rooms:'floors',panels:'rooms',breakers:'panels'}[W.step]);return}
+  else if(a==='wizAddPanel'){const rows=readPanelRows();rows.push({id:'',name:'',floor:0,room:''});W.panelRows=rows;showWiz('panels');return}
+  else if(a==='wizBack'){
+    if(W.step==='panels')wizSavePanels();
+    showWiz({rooms:'floors',rsketch:'rooms',rmanual:'rooms',panels:'rooms',bchoice:'panels',bmanual:'bchoice'}[W.step]);return;
+  }
+  else if(a==='wizPhoto'){W.inPh=true;$('sdlg').classList.remove('open');openPhoto(W.panelIds[+t.dataset.i],true);return}
+  else if(a==='wizManual'){W.mIdx=+t.dataset.i;showWiz('bmanual');return}
+  else if(a==='wizManualSave'){
+    const p=S.panels.find(x=>x.id===W.panelIds[W.mIdx]);
+    if(p){
+      p.total=clamp(+$('wSlots').value||24,2,84);
+      parseBrk($('wbm').value).forEach(b=>{
+        if(b.slot>p.total||S.breakers.some(x=>x.panel===p.id&&(x.slot===b.slot||x.slot2===b.slot)))return;
+        if(b.pole){p.tandem=p.tandem||{};p.tandem[b.slot]=true}
+        S.breakers.push({id:uid('b'),panel:p.id,slot:b.slot,pole:b.pole,amps:b.amps,type:'Standard',status:'used',label:b.funcs,funcs:b.funcs,feedsPanel:''});
+      });
+      touch();render();
+    }
+    showWiz('bchoice');return;
+  }
   else if(a==='wizFinish'){finishWiz();return}
   else if(a==='tandem'){
     const p=S.panels.find(x=>x.id===t.dataset.panel),n=+t.dataset.slot;
@@ -1358,8 +1681,16 @@ document.addEventListener('click',e=>{
   else if(a==='skDetect'){skDetect();changed=false}
   else if(a==='skAdd'){skAdd()}
   else if(a==='photo'){openPhoto();changed=false}
-  else if(a==='phChoose'){phCtx.panel=S.panels.find(x=>x.id===$('phPanel').value)||null;if(phCtx.panel)$('phFile').click();changed=false}
-  else if(a==='phCancel'){$('phdlg').classList.remove('open');changed=false}
+  else if(a==='phType'){
+    if($('phPanel'))phCtx.panel=S.panels.find(x=>x.id===$('phPanel').value)||null;
+    phCtx.kind=t.dataset.v;if(phCtx.panel)$('phFile').click();changed=false;
+  }
+  else if(a==='phCancel'){$('phdlg').classList.remove('open');wizReturn();phReturn();changed=false}
+  else if(a==='phReset'||a==='phBackCorners'){phCtx.pts=[];phStage('corners');changed=false}
+  else if(a==='phRead'){phCtx.cols=+($('phCols')?.value||2);phProcess();changed=false}
+  else if(a==='phAmp'){const el=document.querySelector(`[data-pa="${t.dataset.i}"]`);if(el)el.value=t.dataset.v;changed=false}
+  else if(a==='phSame'){const i=+t.dataset.i,a0=document.querySelector(`[data-pl="${i-1}"]`),el=document.querySelector(`[data-pl="${i}"]`);if(el&&a0)el.value=a0.value;changed=false}
+  else if(a==='phLab'){const el=document.querySelector(`[data-pl="${t.dataset.i}"]`);if(el)el.value=t.dataset.v;changed=false}
   else if(a==='phApply'){applyGuide()}
   else if(a==='phConfirm'){
     let upd=0;
@@ -1466,11 +1797,14 @@ document.addEventListener('change',e=>{
     if(f){const img=new Image();img.onload=()=>{sk.img=img;sk.pts=[];skStage('scale')};img.src=URL.createObjectURL(f)}
     return;
   }
-  if(e.target.id==='phFile'){const f=e.target.files[0];e.target.value='';if(f)showPhotoGuide(f);return}
+  if(e.target.id==='phFile'){const f=e.target.files[0];e.target.value='';if(f)phLoad(f);return}
+  if(e.target.id==='phCols'){phCtx.cols=+e.target.value;return}
+  if(e.target.id==='phSlots'){phCtx.slots=clamp(+e.target.value||24,2,84);phBuildRows();phStage('rows');return}
+  if(e.target.id==='phNum'){phCtx.numbering=e.target.value;phBuildRows();phStage('rows');return}
+  if(e.target.dataset&&e.target.dataset.pf!==undefined){const rows=readPanelRows();rows[+e.target.dataset.pf].room='';W.panelRows=rows;showWiz();return}
   if(e.target.dataset&&e.target.dataset.fl!==undefined){
     const i=+e.target.dataset.fl;S.floors[i]=e.target.value.trim()||S.floors[i];touch();render();return;
   }
-  if(e.target.id==='wRooms'){W.wantRooms=e.target.value;showWiz();return}
   if(['pAddr','pShut','pEv','pShow'].includes(e.target.id)){
     if(e.target.id==='pAddr')S.address=e.target.value.trim();
     if(e.target.id==='pShut')S.mainShutoff=e.target.value.trim();
@@ -1553,6 +1887,13 @@ svg.addEventListener('pointerup',endDrag);
 svg.addEventListener('pointercancel',endDrag);
 
 try{const d=localStorage.getItem('breakerbook-draft');if(d){S=Object.assign(blank(),JSON.parse(d));dirty=true;setStat('Restored unsaved work.')}}catch(e){}
+$('brkWords').innerHTML=BRK_WORDS.map(n=>`<option value="${titleCase(n)}">`).join('');
 $('roomNames').innerHTML=ROOM_NAME_LIST.map(n=>`<option value="${n}">`).join('');
 render();
+(function(){
+  const sp=$('splash');
+  const go=()=>{sp.classList.add('out');setTimeout(()=>sp.remove(),600)};
+  sp.addEventListener('pointerdown',go);
+  document.addEventListener('keydown',()=>{if(document.body.contains(sp))go()});
+})();
 </script></body></html>
