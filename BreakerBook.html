@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>BreakerBook v57</title>
+<title>BreakerBook v58</title>
 
 <style>
 :root{color-scheme:light dark;--bg:#f0f3f7;--pn:#fff;--bgi:#f4f6f9;--fg:#1b2733;--mut:#64748b;--ln:#dfe5ec;--ac:#0b7fc0;--act:#fff;--ac2:#e3f1fb;--wall:#8795a5;--rf:rgba(11,127,192,.05);--rfs:rgba(11,127,192,.13);--sh:0 1px 2px rgba(16,24,40,.05),0 2px 10px rgba(16,24,40,.05);--r:14px}
@@ -162,7 +162,7 @@ header{position:sticky;top:0;z-index:4}
 #phdlg #skc.fit{display:block;margin:0 auto;width:auto;max-width:100%;max-height:calc(100vh - 280px);min-height:140px}
 .skrev .pgr{max-height:calc(100vh - 230px)}.skrev .skrow{padding:5px 0}
 </style></head><body>
-<header><div class="brand"><span class="logo"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M13.2 2 4.5 13.4h5.6L9 22l9.5-12h-5.8L13.2 2Z"/></svg></span><b>BreakerBook</b><span class="tag">Map your home's electrical system</span><span class="ver">v57</span></div>
+<header><div class="brand"><span class="logo"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M13.2 2 4.5 13.4h5.6L9 22l9.5-12h-5.8L13.2 2Z"/></svg></span><b>BreakerBook</b><span class="tag">Map your home's electrical system</span><span class="ver">v58</span></div>
 <div class="acts"><button data-act="open">Open file</button><button data-act="printOpts">Print</button><button data-act="undo">Undo</button><button data-act="new">New</button><button data-act="save">Save file</button></div>
 <nav class="seg" id="modes"></nav>
 <input type="file" id="fIn" accept=".json,application/json" hidden><span id="stat"></span></header>
@@ -198,7 +198,7 @@ header{position:sticky;top:0;z-index:4}
 <input type="file" id="phFile" accept="image/*" hidden>
 <input type="file" id="skFile" accept="image/*" hidden>
 <datalist id="roomNames"></datalist><datalist id="brkWords"></datalist>
-<div id="splash"><div class="spl-logo"><svg viewBox="0 0 24 24" width="52" height="52" fill="currentColor"><path d="M13.2 2 4.5 13.4h5.6L9 22l9.5-12h-5.8L13.2 2Z"/></svg></div><h1>BreakerBook</h1><p>Map your home's electrical system</p><span class="spl-ver">Version 57</span><div class="spl-hint">Tap anywhere to begin</div></div>
+<div id="splash"><div class="spl-logo"><svg viewBox="0 0 24 24" width="52" height="52" fill="currentColor"><path d="M13.2 2 4.5 13.4h5.6L9 22l9.5-12h-5.8L13.2 2Z"/></svg></div><h1>BreakerBook</h1><p>Map your home's electrical system</p><span class="spl-ver">Version 58</span><div class="spl-hint">Tap anywhere to begin</div></div>
 <div id="print"></div>
 <script>
 const DT=['Outlet','Switch','Light','Fan','Fixture','Other'];
@@ -445,7 +445,7 @@ function wizHTML(){
       ${nav('Next','wizPanels')}`;
   }
   if(W.step==='bchoice')return `<h3 style="margin:0">Breakers</h3>
-    <p class="sm">How do you want to add the breakers? You can import a photo of the panel (amps), a photo of the written list (labels), or both.</p>
+    <p class="sm">How do you want to add the breakers? You can use a photo of the panel, a photo of the written list, or both, and type what you see.</p>
     ${W.panelIds.map((id,i)=>{const p=S.panels.find(x=>x.id===id);if(!p)return '';const n=S.breakers.filter(b=>b.panel===id).length;return `<div class="card" style="padding:10px"><b>${esc(p.name)}</b> <span class="sm">${n} breaker${n===1?'':'s'}</span><div class="row"><button data-act="wizPhoto" data-i="${i}">Import from a photo</button><button data-act="wizManual" data-i="${i}">Enter them now</button></div></div>`}).join('')}
     <div class="row"><button data-act="wizBack">Back</button><button data-act="wizFinish">Finish (add the rest later)</button></div>`;
   const p=S.panels.find(x=>x.id===W.panelIds[W.mIdx]);
@@ -600,20 +600,7 @@ function loadScript(src){return new Promise((res,rej)=>{const s=document.createE
 // Photo import (v56): two photo types. The person taps the four corners of the area, the app straightens it,
 // cuts it into rows, and suggests amps (panel photo) or labels (written list). Every row is shown beside its crop to confirm.
 let phPending=null,phCtx={done:{panel:false,list:false},panel:null,kind:'panel',wiz:false,img:null,src:null,pts:[],cols:2,numbering:'pairs',slots:24,note:'',rect:null,rows:[]};
-const AMP_WORDS=['15','20','25','30','35','40','45','50','60','70','80','90','100','110','125','150','175','200'];
 const BRK_WORDS=['RANGE','OVEN','STOVE','COOKTOP','FURNACE','HEAT','HEATER','AC','COOLING','KITCHEN','RECEPT','RECEPTACLE','RECEPTACLES','OUTLET','OUTLETS','GARAGE','OFFICE','LIGHT','LIGHTS','LTS','DRYER','WASHER','WASHING','MACHINE','REFRIGERATOR','FRIDGE','FREEZER','DISHWASHER','DISPOSAL','MICROWAVE','BEDROOM','BED','BATH','BATHROOM','LIVING','ROOM','DINING','FAMILY','BASEMENT','WATER','HEATER','PUMP','SUMP','WELL','OUTSIDE','EXTERIOR','PORCH','DECK','SMOKE','FAN','SPARE','HALL','LAUNDRY','WORKBENCH','SHOP','UTILITY','SINK','COUNTER','MASTER','GUEST','CLOSET','ATTIC','STAIRS','DOOR','DOORBELL','ALARM','TV','PANEL','SUB','MAIN','GFCI','GFI','MOTOR','AIR','CONDITIONER','HOT','TUB','POOL','SHED','EV','CHARGER'];
-const GLD={
-'0':[.55,[[.5,0],[.15,.1],[0,.35],[0,.65],[.15,.9],[.5,1],[.85,.9],[1,.65],[1,.35],[.85,.1],[.5,0]]],
-'1':[.35,[[0,.22],[.6,0],[.6,1]]],
-'2':[.55,[[0,.2],[.3,0],[.7,0],[1,.2],[1,.4],[0,1],[1,1]]],
-'3':[.55,[[0,.1],[.3,0],[.8,0],[1,.2],[1,.35],[.7,.5],[.35,.5]],[[.7,.5],[1,.65],[1,.85],[.7,1],[.3,1],[0,.9]]],
-'4':[.6,[[.7,1],[.7,0],[0,.7],[1,.7]]],
-'5':[.55,[[1,0],[.1,0],[0,.5],[.6,.4],[1,.6],[1,.85],[.6,1],[0,.9]]],
-'6':[.55,[[.9,.1],[.5,0],[.1,.3],[0,.7],[.2,1],[.7,1],[1,.8],[.9,.55],[.5,.45],[.1,.6]]],
-'7':[.55,[[0,0],[1,0],[.4,1]]],
-'8':[.55,[[.5,.5],[.1,.4],[.1,.1],[.5,0],[.9,.1],[.9,.4],[.5,.5],[.05,.65],[.05,.9],[.5,1],[.95,.9],[.95,.65],[.5,.5]]],
-'9':[.55,[[.1,.9],[.5,1],[.9,.7],[1,.3],[.8,0],[.4,0],[0,.2],[.1,.5],[.5,.55],[.9,.4]]]
-};
 
 // Straightens the four tapped corners (TL, TR, BR, BL) into a W-wide rectangle. Returns gray values and a color canvas.
 function rectify(src,pts){
@@ -667,101 +654,6 @@ function slotFor(r,col,R,cols,numbering){
   if(numbering==='pairs')return 2*r+1+col;
   return col*R+r+1;
 }
-// Digits that touch each other come out as one wide mark: cut it where the ink is thinnest.
-function splitGlued(c,W){
-  const n=c.w>1.75*c.h?3:2,col=new Float32Array(c.w);
-  for(const q of c.pix){col[(q%W)-c.x0]++}
-  const cuts=[];
-  for(let k=1;k<n;k++){
-    const mid=c.w*k/n,lo=Math.max(1,Math.floor(mid-c.w*0.2/n*2)),hi=Math.min(c.w-2,Math.ceil(mid+c.w*0.2/n*2));
-    let bx=Math.round(mid),bv=1e9;for(let x=lo;x<=hi;x++)if(col[x]<bv){bv=col[x];bx=x}
-    cuts.push(bx+c.x0);
-  }
-  const parts=Array.from({length:n},()=>({x0:1e9,y0:1e9,x1:-1,y1:-1,pix:[]}));
-  for(const q of c.pix){
-    const x=q%W,y=(q-x)/W;let k=0;while(k<cuts.length&&x>cuts[k])k++;
-    const P=parts[k];P.pix.push(q);if(x<P.x0)P.x0=x;if(x>P.x1)P.x1=x;if(y<P.y0)P.y0=y;if(y>P.y1)P.y1=y;
-  }
-  return parts.filter(P=>P.pix.length>=6).map(P=>({...P,w:P.x1-P.x0+1,h:P.y1-P.y0+1}));
-}
-// Reads the amps printed on a handle: finds digit-sized marks (dark on light or light on dark) and compares them with common amp sizes.
-function readAmps0(g,w,h){
-  let best=null;
-  for(const pol of [0,1]){
-    const gg=pol?g.map(v=>255-v):g;
-    const dark=localDarkMask(gg,w,h,Math.max(6,Math.round(h*.25)),35);
-    let comps=[];
-    for(const c of markComponents(dark,w,h)){
-      if(!(c.h>=0.22*h&&c.h<=0.85*h&&c.pix.length>=8&&c.x0>0&&c.y0>0&&c.x1<w-1&&c.y1<h-1))continue;
-      if(c.w<=1.0*c.h){comps.push(c);continue}
-      if(c.w>2.6*c.h)continue;
-      comps.push(...splitGlued(c,w));
-    }
-    comps.sort((a,b)=>a.x0-b.x0);
-    const groups=[];
-    for(const c of comps){
-      const gr=groups.find(G=>{const l=G[G.length-1],hh=Math.max(l.h,c.h);return c.x0-l.x1<=0.9*hh&&Math.abs((c.y0+c.y1)/2-(l.y0+l.y1)/2)<=0.35*hh&&Math.min(l.h,c.h)/hh>=0.65});
-      if(gr)gr.push(c);else groups.push([c]);
-    }
-    for(const G of groups){
-      if(G.length<2||G.length>3)continue;
-      const pieces=G.map(c=>({x0:c.x0,y0:c.y0,x1:c.x1,y1:c.y1,pix:c.pix}));
-      const ink=G.reduce((s,c)=>s+c.pix.length,0);
-      const rk=AMP_WORDS.filter(a=>a.length===G.length).map(a=>({word:a,score:-a.split('').reduce((t,ch,k)=>t+digitCost(pieces[k],ch,w),0)/a.length})).sort((a,b)=>b.score-a.score);
-      if(!rk.length)continue;
-      const cand={rk,ink,margin:rk[0].score-(rk[1]?rk[1].score:-1)};
-      if(!best||cand.rk[0].score>best.rk[0].score)best=cand;
-    }
-  }
-  if(!best)return null;
-  return {top:best.rk.slice(0,3).map(r=>r.word),score:best.rk[0].score,sure:best.rk[0].score>-0.35&&best.margin>=0.05};
-}
-let _digitT=null;
-// Printed digit shapes, drawn with the device's own bold and regular sans fonts.
-function digitTemplates(){
-  if(_digitT)return _digitT;
-  _digitT={};
-  for(const ch of '0123456789'){
-    _digitT[ch]=[];
-    for(const font of ['bold 60px Helvetica, Arial, sans-serif','60px Helvetica, Arial, sans-serif','bold 60px monospace','bold 60px "DejaVu Sans", Verdana, sans-serif']){
-      const cv=document.createElement('canvas');cv.width=90;cv.height=100;const x=cv.getContext('2d');
-      x.fillStyle='#fff';x.fillRect(0,0,90,100);x.fillStyle='#000';x.font=font;x.textBaseline='alphabetic';x.fillText(ch,15,75);
-      const d=x.getImageData(0,0,90,100).data,a=new Float32Array(90*100);
-      for(let i=0;i<a.length;i++)a[i]=d[i*4]<128?1:0;
-      const bx=inkBox(a,90,100,.5);if(!bx)continue;
-      _digitT[ch].push({aspect:bx.w/bx.h,g:toGrid(a,90,100,bx.x,bx.y,bx.w,bx.h,LG_W,LG_H)});
-    }
-  }
-  return _digitT;
-}
-function digitCost(P,ch,W){
-  const pg=P._g||(P._g=pieceGrid(P,W));let best=9;
-  for(const t of digitTemplates()[ch]){const c=gridDist(pg.g,t.g)*3+0.25*Math.abs(Math.log(pg.aspect/t.aspect));if(c<best)best=c}
-  return best;
-}
-// Reads the handwriting on one list row. Returns {blank, text, sure, chips}.
-function readListRow(g,w,h){
-  const dark=localDarkMask(g,w,h,20,14);
-  const cut=stripLongRuns(dark,w,h,Math.max(40,Math.round(1.4*h)));
-  let comps=markComponents(cut,w,h).filter(c=>c.pix.length>=6&&c.h>=0.18*h&&c.h<=0.95*h&&c.x1>0.14*w);
-  let ink=0;for(const c of comps)ink+=c.pix.length;
-  if(ink<0.012*w*h||!comps.length)return {blank:true,text:'',sure:false,chips:[]};
-  const pieces=mergePieces(comps,w),bank=inkBank();
-  const hs=pieces.map(p=>p.y1-p.y0+1).sort((a,b)=>a-b),href=hs[Math.floor(hs.length*.6)]||h*.5;
-  const words=[];let cur=[];
-  pieces.forEach((p,i)=>{if(i&&p.x0-pieces[i-1].x1>0.7*href){words.push(cur);cur=[]}cur.push(p)});
-  if(cur.length)words.push(cur);
-  const vocab=BRK_WORDS.concat(ROOM_WORDS.filter(x=>x.indexOf(' ')<0&&!BRK_WORDS.includes(x)),inkWords.filter(x=>x.indexOf(' ')<0));
-  const out=[];let allSure=true,chips=[];
-  words.forEach((wp,i)=>{
-    if(wp.length<2){allSure=false;out.push('?');return}
-    const rk=rankLetters(wp,vocab,bank,w),top=rk[0],sc=top.score,mg=sc-rk[1].score;
-    if(sc>-0.30&&mg>=0.04){out.push(titleCase(top.word))}else{out.push('?');allSure=false}
-    if(i===0)chips=rk[0].score>-0.36?rk.slice(0,3).map(r=>titleCase(r.word)):[];
-  });
-  const known=out.filter(x=>x!=='?');
-  return {blank:false,text:known.length?out.join(' ').replace(/(\s\?)+$/,'').trim():'',sure:allSure&&known.length===out.length,chips};
-}
 // Rows are not all the same height in a photo (perspective), so the row boundaries are placed on the real gaps
 // between breakers. The left column (all single breakers) gives the cleanest gaps; both columns share them.
 function trackRows(r,cols,ph,T,maxR,estR){
@@ -807,23 +699,11 @@ function phBuildRows(){
   const R=Math.max(1,tr.R);
   if(side){if(2*R>phCtx.slots&&!phCtx.maxR)phCtx.slots=2*R}
   else if(!phCtx.maxR||cols*R<phCtx.slots)phCtx.slots=cols*R;
-  const rows=[],cw=Math.floor(r.W/cols),cellsBy=[],subsBy=[];
-  const cellOf=(col,i)=>{
-    const x0=col*cw,y0=tr.bnd[col][i],h=Math.max(8,tr.bnd[col][i+1]-y0),w=cw,g=new Float32Array(w*h);
-    for(let y=0;y<h;y++)for(let x=0;x<w;x++)g[y*w+x]=r.g[Math.max(0,Math.min(r.H-1,y0+y))*r.W+x0+x];
-    return {g,w,h,x0,y0};
-  };
-  for(let col=0;col<cols;col++){
-    cellsBy[col]=[];for(let i=0;i<R;i++)cellsBy[col][i]=cellOf(col,i);
-    subsBy[col]=[];
-    if(phCtx.kind==='panel'){try{subsBy[col]=ampSubs(cellsBy[col])}catch(e){subsBy[col]=[]}}
-  }
+  const rows=[],cw=Math.floor(r.W/cols);
   for(let col=0;col<cols;col++)for(let i=0;i<R;i++){
     const slot=slotForPh(i,col,R);
     if(slot>phCtx.slots)continue;
-    const {g,w,h,x0,y0}=cellsBy[col][i],sub=subsBy[col][i]||null;
-    let read=null;
-    try{read=phCtx.kind==='panel'?phReadAmp(cellsBy[col][i],sub):readListRow(g,w,h)}catch(e){read=null}
+    const x0=col*cw,y0=tr.bnd[col][i],h=Math.max(8,tr.bnd[col][i+1]-y0),w=cw;
     const cv=document.createElement('canvas'),k=Math.min(1,300/w);
     let crop2='';
     if(phCtx.kind==='list'){
@@ -833,9 +713,13 @@ function phBuildRows(){
     }else{
       cv.width=Math.round(w*k);cv.height=Math.round(h*k);
       cv.getContext('2d').drawImage(r.cv,x0,y0,w,h,0,0,cv.width,cv.height);
-      try{crop2=grayToUrl(enhanceGray(g,w,h),w,h,cv.width)}catch(e){}
+      try{
+        const g=new Float32Array(w*h);
+        for(let y=0;y<h;y++)for(let x=0;x<w;x++)g[y*w+x]=r.g[Math.max(0,Math.min(r.H-1,y0+y))*r.W+x0+x];
+        crop2=grayToUrl(enhanceGray(g,w,h),w,h,cv.width);
+      }catch(e){}
     }
-    rows.push({slot,col,i,read,sub,crop:cv.toDataURL('image/jpeg',0.75),crop2,next:slotForPh(i+1,col,R),hasNext:i+1<R});
+    rows.push({slot,col,i,bx:x0,by:y0,bw:w,bh:h,crop:cv.toDataURL('image/jpeg',0.75),crop2,next:slotForPh(i+1,col,R),hasNext:i+1<R});
   }
   rows.sort((a,b)=>a.slot-b.slot);
   if(phCtx.kind==='panel'&&cols===2){
@@ -872,11 +756,11 @@ function phStage(stage){
   const kindName=phCtx.kind==='panel'?'panel photo (amps)':'written list (labels)';
   if(stage==='pick'){
     box.innerHTML=`<h3 style="margin:0">Import breakers from a photo</h3>
-      <p class="sm">The photo stays on this device and is not uploaded. Use any of the photos: the panel photo (or a close-up of each column) gives the amps and the written list gives the labels. They are combined by slot number.${phCtx.msg?` <b>${esc(phCtx.msg)}</b>`:''}</p>
+      <p class="sm">The photo stays on this device and is not uploaded. Use any of the photos. Each shows the picture beside the rows so you can type what you see. They are combined by slot number.${phCtx.msg?` <b>${esc(phCtx.msg)}</b>`:''}</p>
       ${phCtx.panel&&phCtx.wiz?`<p class="sm"><b>${esc(phCtx.panel.name)}</b></p>`:`<select id="phPanel">${S.panels.map(p=>`<option value="${p.id}"${phCtx.panel&&phCtx.panel.id===p.id?' selected':''}>${esc(p.name)}</option>`).join('')}</select>`}
-      <button class="opt" data-act="phType" data-v="panel"><b>${phCtx.done.panel?'&#10003; ':''}Photo of the panel</b><span>Door open. Reads the amps printed on the breaker handles.</span></button>
-      <button class="opt" data-act="phType" data-v="closeup"><b>${phCtx.done.panel?'&#10003; ':''}Close-up of one column (best for amps)</b><span>Move closer and photograph one column of handles at a time. Reads the amps most reliably, and learns from the values you confirm.</span></button>
-      <button class="opt" data-act="phType" data-v="list"><b>${phCtx.done.list?'&#10003; ':''}Photo of the written list</b><span>Usually inside the door. Reads the labels beside each number.</span></button>
+      <button class="opt" data-act="phType" data-v="panel"><b>${phCtx.done.panel?'&#10003; ':''}Photo of the panel</b><span>Door open. Shows each breaker row beside the picture so you can type the amps.</span></button>
+      <button class="opt" data-act="phType" data-v="closeup"><b>${phCtx.done.panel?'&#10003; ':''}Close-up of one column</b><span>Move closer and photograph one column of handles at a time. The rows are bigger and easier to read.</span></button>
+      <button class="opt" data-act="phType" data-v="list"><b>${phCtx.done.list?'&#10003; ':''}Photo of the written list</b><span>Usually inside the door. Shows each row beside the picture so you can type the labels.</span></button>
       <div class="row"><button data-act="phCancel"${phCtx.done.panel||phCtx.done.list?' class="pri"':''}>${phCtx.done.panel||phCtx.done.list?'Done':'Cancel'}</button></div>`;
   }else if(stage==='corners'){
     const tip=phCtx.side?'Tap the four corners around the breakers in this column: top-left, top-right, bottom-right, bottom-left. Start at the top of the first row and end at the bottom of the last row. Include the amp numbers.':phCtx.kind==='panel'
@@ -886,43 +770,51 @@ function phStage(stage){
     box.innerHTML=`<h3 style="margin:0">Mark the area</h3><p class="sm">${tip} Taps: ${n} of 4.</p>
       <canvas id="phc" style="display:block;max-width:100%;max-height:56vh;margin:0 auto;touch-action:none;border:1px solid var(--ln);border-radius:10px"></canvas>
       ${phCtx.closeup?`<div class="row"><label class="sm" style="flex:1">Which column is this?<select id="phSide"><option value="left"${phCtx.side==='left'?' selected':''}>Left column</option><option value="right"${phCtx.side==='right'?' selected':''}>Right column</option></select></label></div>`:`<div class="row"><label class="sm" style="flex:1">Columns<select id="phCols"><option value="2"${phCtx.cols===2?' selected':''}>Two columns</option><option value="1"${phCtx.cols===1?' selected':''}>One column</option></select></label></div>`}
-      <div class="row"><button data-act="phRead"${n<4?' disabled':''}>Read the photo</button><button data-act="phReset">Reset taps</button><button data-act="phCancel">Cancel</button></div>`;
+      <div class="row"><button data-act="phRead"${n<4?' disabled':''}>Show the rows</button><button data-act="phReset">Reset taps</button><button data-act="phCancel">Cancel</button></div>`;
     drawPhc();
   }else if(stage==='rows'){
     const isP=phCtx.kind==='panel';
-    box.innerHTML=`<h3 style="margin:0">Check each row</h3>
-      <p class="sm">${esc(phCtx.note)} ${isP?'Amps in the box were read confidently; the buttons are other likely values. Check each against the crop, and leave a row blank if it has no breaker. Values you confirm teach the reader (kept on this device).':'I cut out each row beside its number, but I cannot reliably read handwriting on a list yet, so type each label. Printed text may be suggested, and rows that look empty are marked.'}</p>
+    box.innerHTML=`<h3 style="margin:0">Enter the breakers</h3>
+      <p class="sm" style="margin:0">${esc(phCtx.note)} ${isP?'Compare each row with the picture and type the amps. Leave a row blank if it has no breaker.':'Compare each row with the picture and type the label (and amps if written). Leave a row blank if nothing is written.'}</p>
+      <div class="row"><button data-act="phApply">Add breakers</button><button data-act="phBackCorners">Redo corners</button><button data-act="phCancel">Cancel</button></div>
       <div class="row"><label class="sm" style="flex:1">Slots<input id="phSlots" type="number" min="2" max="84" value="${phCtx.slots}"></label>
       ${phCtx.cols===2||phCtx.side?`<label class="sm" style="flex:2">Numbering<select id="phNum"><option value="pairs"${phCtx.numbering==='pairs'?' selected':''}>Left and right pairs (1 and 2, then 3 and 4)</option><option value="cols"${phCtx.numbering==='cols'?' selected':''}>Down the left, then the right (1-${Math.ceil(phCtx.slots/2)}, then ${Math.ceil(phCtx.slots/2)+1}-${phCtx.slots})</option></select></label>`:''}</div>
-      <div class="phrows">${phCtx.rows.map((r,i)=>{
-        const rd=r.read;
+      <div class="pg skrev"><div class="pgl"><canvas id="phov" style="width:100%;display:block"></canvas></div><div class="pgr">${phCtx.rows.map((r,i)=>{
         if(isP){
-          const sure=rd&&rd.sure?rd.top[0]:'';
-          const chips=(rd?rd.chips||rd.top:[]).concat(['15','20','30','40','50']).filter((v,j,a)=>a.indexOf(v)===j).slice(0,6);
-          const tier=rd?rd.tier:'none';
-          const badge=tier==='confirmed'?`<div class="tier ok">Confirmed ${rd.pct}%</div>`:tier==='probable'?`<div class="tier mid">Probable ${rd.pct}%: please check</div>`:`<div class="nr">Not recognized${rd&&rd.disagree?' (readings disagree)':''}: tap the amps below or type them</div>`;
-          return `<div class="skrow${r.joined?' joined':''}" id="phr${i}"><span class="sn">${r.slot}</span><div class="skmain"><div class="phimgs"><img class="phimg" src="${r.crop}" alt="Row ${r.slot}">${r.crop2?`<img class="phimg" src="${r.crop2}" alt="Row ${r.slot}, brightened">`:''}</div>
+          const chips=['15','20','30','40','50','60'];
+          return `<div class="skrow${r.joined?' joined':''}" id="phr${i}" data-ri="${i}"><span class="sn">${r.slot}</span><div class="skmain"><div class="phimgs"><img class="phimg" src="${r.crop}" alt="Row ${r.slot}">${r.crop2?`<img class="phimg" src="${r.crop2}" alt="Row ${r.slot}, brightened">`:''}</div>
             ${r.joined?`<div class="jn sm">Joined to the breaker above (2-pole). Untick 2-pole on that row if this is wrong.</div>`:'<div class="jn sm" style="display:none">Joined to the breaker above (2-pole).</div>'}
-            ${badge}
-            <div class="row"><input data-pa="${i}" type="number" inputmode="numeric" placeholder="Amps" value="${esc(sure)}" style="flex:1"><label class="sm" style="flex:2;white-space:nowrap"><input type="checkbox" data-p2="${i}" style="width:auto"${r.tie?' checked':''}> 2-pole (also uses slot ${r.next})${r.tie?' <b>(joined handle seen)</b>':''}</label></div>
+            <div class="row"><input data-pa="${i}" type="number" inputmode="numeric" placeholder="Amps" style="flex:1"><label class="sm" style="flex:2;white-space:nowrap"><input type="checkbox" data-p2="${i}" style="width:auto"${r.tie?' checked':''}> 2-pole (also uses slot ${r.next})${r.tie?' <b>(joined handle seen)</b>':''}</label></div>
             <div class="skhint">${chips.map(v=>`<button class="tg" data-act="phAmp" data-i="${i}" data-v="${v}">${v}A</button>`).join('')}</div></div></div>`;
         }
-        const val=rd&&rd.sure?rd.text:'';
-        const chips=(rd&&!rd.blank?rd.chips:[]);
-        return `<div class="skrow"><span class="sn">${r.slot}</span><div class="skmain"><img class="phimg" src="${r.crop}" alt="Row ${r.slot}">
-          <div class="row"><input data-pl="${i}" list="brkWords" placeholder="${rd&&rd.blank?'(looks blank)':'Label'}" value="${esc(val)}" style="flex:2"><input data-pm="${i}" type="number" inputmode="numeric" placeholder="Amps" style="flex:1"></div>
-          ${val?'':(rd&&rd.blank?'<div class="sm">Looks empty. Leave blank if nothing is written.</div>':'<div class="nr">Not recognized: type the label</div>')}
-          ${i>0?`<div class="skhint"><button class="tg" data-act="phSame" data-i="${i}">Same as above</button></div>`:''}
-          ${!val&&rd&&rd.text?`<div class="skhint"><span class="sm">Partly read:</span><button class="tg" data-act="phLab" data-i="${i}" data-v="${esc(rd.text)}">${esc(rd.text)}</button></div>`:''}
-          ${chips.length?`<div class="skhint">${chips.map(v=>`<button class="tg" data-act="phLab" data-i="${i}" data-v="${esc(v)}">${esc(v)}</button>`).join('')}</div>`:''}</div></div>`;
-      }).join('')}</div>
-      <div class="row"><button data-act="phApply">Add breakers</button><button data-act="phBackCorners">Redo corners</button><button data-act="phCancel">Cancel</button></div>`;
+        return `<div class="skrow" data-ri="${i}"><span class="sn">${r.slot}</span><div class="skmain"><img class="phimg" src="${r.crop}" alt="Row ${r.slot}">
+          <div class="row"><input data-pl="${i}" list="brkWords" placeholder="Label" style="flex:2"><input data-pm="${i}" type="number" inputmode="numeric" placeholder="Amps" style="flex:1"></div>
+          ${i>0?`<div class="skhint"><button class="tg" data-act="phSame" data-i="${i}">Same as above</button></div>`:''}</div></div>`;
+      }).join('')}</div></div>`;
+    drawPhOv(-1);
   }else if(stage==='conflicts'){
     const cf=phPending.conflicts;
     box.innerHTML=`<h3 style="margin:0">Slots already in use</h3>
       <p class="sm">These slots already have different details. Choose Update to use the photo's, or Skip to keep what is there.</p>
       ${cf.map((c,i)=>`<div class="row"><span style="flex:2"><b>${esc(bnum(c.ex))}</b> now: ${esc(c.ex.amps)}A ${esc(c.ex.label)}<br><span class="sm">Photo: ${esc(c.b.slot)}, ${esc(c.b.amps||'no amps')}, ${esc(c.b.funcs||'no label')}</span></span><select data-cf="${i}"><option value="skip">Skip</option><option value="update">Update</option></select></div>`).join('')}
       <div class="row"><button data-act="phConfirm">Apply choices</button><button data-act="phAll">Update all</button></div>`;
+  }
+}
+// The straightened photo with every row outlined; the row being typed is highlighted.
+function drawPhOv(active){
+  const c=$('phov'),r=phCtx.rect;if(!c||!r)return;
+  const k=Math.min(1,900/r.W);c.width=Math.round(r.W*k);c.height=Math.round(r.H*k);
+  const x=c.getContext('2d');x.drawImage(r.cv,0,0,c.width,c.height);
+  const lw=Math.max(2,c.width/260);x.lineWidth=lw;x.font=`bold ${Math.max(12,Math.round(c.width/22))}px sans-serif`;
+  phCtx.rows.forEach((rw,i)=>{
+    const X=rw.bx*k,Y=rw.by*k,Wd=rw.bw*k,Hh=rw.bh*k;
+    if(i===active){x.fillStyle='rgba(232,89,12,.28)';x.fillRect(X,Y,Wd,Hh);x.strokeStyle='#e8590c'}else x.strokeStyle='rgba(43,108,176,.8)';
+    x.strokeRect(X+lw/2,Y+lw/2,Wd-lw,Hh-lw);
+    x.fillStyle=i===active?'#e8590c':'#2b6cb0';x.fillText(String(rw.slot),X+lw*2,Y+Math.min(Hh-lw,c.width/20));
+  });
+  if(active>=0){
+    const pgl=c.parentElement,rw=phCtx.rows[active],f=c.getBoundingClientRect().width/c.width;
+    if(pgl&&rw)pgl.scrollTop=Math.max(0,rw.by*k*f-pgl.clientHeight/3);
   }
 }
 function drawPhc(){
@@ -979,7 +871,6 @@ function applyGuide(){
     if(used.has(r.slot))return;
     if(isP){
       let amps=(document.querySelector(`[data-pa="${i}"]`)?.value||'').trim().replace(/a$/i,'');
-      if(amps&&r.sub){try{ampLearn(r.sub.g,r.sub.w,r.sub.h,amps)}catch(e){}}
       const two=document.querySelector(`[data-p2="${i}"]`)?.checked&&r.hasNext;
       if(!amps&&two&&r.nextIdx>=0)amps=(document.querySelector(`[data-pa="${r.nextIdx}"]`)?.value||'').trim().replace(/a$/i,'');
       if(!amps)return;
@@ -1005,24 +896,6 @@ function applyGuide(){
   finishPhoto(added,updated);
 }
 
-// Digits on handles are often printed sideways, so the cell is also tried turned a quarter turn each way.
-function rotateGray(g,w,h,dir){
-  const o=new Float32Array(w*h);
-  for(let y=0;y<h;y++)for(let x=0;x<w;x++){
-    if(dir>0)o[x*h+(h-1-y)]=g[y*w+x];   // clockwise: new width h, new height w
-    else o[(w-1-x)*h+y]=g[y*w+x];
-  }
-  return o;
-}
-function readAmps(g,w,h){
-  let best=readAmps0(g,w,h);
-  for(const dir of [1,-1]){
-    const r=readAmps0(rotateGray(g,w,h,dir),h,w);
-    if(r&&(!best||r.score>best.score))best=r;
-  }
-  return best;
-}
-
 // ---- v55: enhanced crops, joined-handle (two-pole) detection, two-pass amp reading with confidence tiers ----
 function localMean(g,W,H,R){
   const integ=new Float64Array((W+1)*(H+1));
@@ -1038,13 +911,6 @@ function localMean(g,W,H,R){
 function enhanceGray(g,w,h){
   const m=localMean(g,w,h,Math.max(6,Math.round(h*.3))),o=new Float32Array(w*h);
   for(let i=0;i<o.length;i++)o[i]=Math.max(0,Math.min(255,128+(g[i]-m[i])*2.6));
-  return o;
-}
-function upGray(g,w,h,k){
-  const W=w*k,H=h*k,o=new Float32Array(W*H);
-  for(let y=0;y<H;y++){const sy=Math.min(h-1.001,y/k),y0=Math.floor(sy),fy=sy-y0;
-    for(let x=0;x<W;x++){const sx=Math.min(w-1.001,x/k),x0=Math.floor(sx),fx=sx-x0;
-      o[y*W+x]=(g[y0*w+x0]*(1-fx)+g[y0*w+x0+1]*fx)*(1-fy)+(g[(y0+1)*w+x0]*(1-fx)+g[(y0+1)*w+x0+1]*fx)*fy}}
   return o;
 }
 function grayToUrl(g,w,h,outW){
@@ -1080,19 +946,6 @@ function detectTies(r,cols,bnd){
   }
   return out;
 }
-// Two passes (as photographed, and enlarged with boosted contrast). Agreement gives Confirmed; one pass gives Probable.
-function readAmpsTier(g,w,h){
-  const A=readAmps(g,w,h);
-  let B=null;
-  try{B=readAmps(enhanceGray(upGray(g,w,h,2),w*2,h*2),w*2,h*2)}catch(e){}
-  const okA=A&&A.sure,okB=B&&B.sure;
-  const chips=[...new Set([].concat(A?A.top:[],B?B.top:[]))].slice(0,5);
-  const pctOf=sc=>Math.max(5,Math.min(99,Math.round(100*(1+sc/0.7))));
-  if(okA&&okB&&A.top[0]===B.top[0])return {top:A.top,chips,tier:'confirmed',pct:Math.min(99,pctOf(Math.max(A.score,B.score))+10),sure:true};
-  if(okA&&okB)return {top:chips,chips,tier:'none',pct:0,sure:false,disagree:true};
-  if(okA||okB){const R=okA?A:B;return {top:R.top,chips,tier:'probable',pct:Math.min(80,pctOf(R.score)),sure:true}}
-  return {top:chips,chips,tier:'none',pct:0,sure:false};
-}
 function phJoin(i,on){
   const r=phCtx.rows[i];if(!r)return;
   const j=r.nextIdx;if(j<0)return;
@@ -1100,163 +953,6 @@ function phJoin(i,on){
   el.classList.toggle('joined',on);
   const note=el.querySelector('.jn');if(note)note.style.display=on?'block':'none';
 }
-
-const AMP_SEED={"0":[{"a":0.7,"s":"24688742456677536654566587423677874235779742257687423566775346656666665346787642"},{"a":0.8,"s":"56888631577776536765566467634676675335666763246656643566356556652467776413588753"},{"a":0.67,"s":"45787531667776538765676597534687974236888742368977533689566557883567777624688865"},{"a":0.64,"s":"24688753356677655665467777532578875224798752247877633578566556763566665423577642"},{"a":0.64,"s":"12467665135677773566568856643579676324797763247988643578677556764677765435788642"},{"a":0.73,"s":"12578864246778764676678857644688676446886764467777655775777677535787763246776421"},{"a":0.54,"s":"99887544888875446788765434677655124544330122211101110000122100003432000055420000"},{"a":0.43,"s":"67899864788888769875678898644689985335899853358988644689677657894577788724689876"},{"a":0.76,"s":"25677631456556436653455487422565874224667742246766423566455446663466665413677643"},{"a":0.65,"s":"34787642456666547653456687422478873114788731147887422467765445664566665434788742"},{"a":0.73,"s":"24677642346555534553345555421356654113675542146756532466466545543577765324788742"},{"a":0.87,"s":"35654554466656666666567676655665765666537666764276677543766766536656665344446642"},{"a":0.87,"s":"32233322333344433333455411123554000134430001243200012332000123210001232100012210"}],"1":[{"a":0.45,"s":"11246764234678753457887523457876112358880012578800025788000257870012577600125776"},{"a":0.48,"s":"11246764234678753467898734568986112478750013687600136887001368980013689800136888"},{"a":0.41,"s":"11235788234678884567899934578999123589990124799900247999002479990024788800146888"},{"a":0.48,"s":"11246876234678873457898623468875112478750014787500147875001478740025886400258864"},{"a":0.72,"s":"13555555246654332466421134653100345521002344210012443210123442100234311002332100"}],"2":[{"a":0.7,"s":"24688864456777756654567755433676233346651245654334665421567643217876554399887765"},{"a":0.71,"s":"35787631567887536777776555556765233466541245654234665421567654326787765467888875"},{"a":0.71,"s":"56887531677666437654576454335664223456531245653134665321467653325676665545667877"},{"a":0.67,"s":"24788876357777774665568834434578223356761245665434666532567754337887766688988888"},{"a":0.68,"s":"12468886135678882465678923444688123356661245554334665421577754228887654399887754"},{"a":0.71,"s":"02467865135677772456678823555677134566542356653245776532678876536677875444567753"},{"a":0.89,"s":"45567888346788881367777713565444124432110122100000121000001221110123333201244444"},{"a":0.5,"s":"67887421788776427666775354446753223566421356653135676421678764328988765499987665"},{"a":0.41,"s":"12444433123444321233442112234421223443213444432145554321555554324455543223445432"},{"a":0.91,"s":"00012455001234431123432123443210234322113332233233334432333444211234431002343100"}],"3":[{"a":0.69,"s":"24677653246555552343356712233577222246764322357755423567566445663566555425665532"}],"5":[{"a":0.67,"s":"35888865467766535776543267765543566566655544467855323678665446775666665445666542"},{"a":0.7,"s":"46898865468776535776543267765543567666664554568844323689555446785676677646888764"},{"a":0.68,"s":"47899875578877546787654267876532677666536654577676435777765567766667776445688753"},{"a":0.64,"s":"25799887357887764687665457877653567667655554578755434688665457776777776456787642"},{"a":0.83,"s":"44321000555321005554210034321100332100003432100034532211245543331355434312443233"},{"a":0.71,"s":"36788753467665425665432167755421666655436554456555323566554335655565565435777754"},{"a":0.71,"s":"36788753467765425676542156766431456566534443466554323577555446664565554334565431"}]};
-// ---- v57: find the amp column automatically, read it with digits learned from real breakers ----
-// Amp numbers sit in one vertical strip on every brand. The strip is found from rows that agree, then read with
-// digit shapes taken from labeled photos (built in) plus every value you confirm (kept on this device).
-const AMP_RARE=new Set(['25','35','45','70','80','90','110','125','150','175','200']);
-let AMP_BANK={},AMP_LEARNED={};
-function ampEnc(e){return {a:+e.aspect.toFixed(2),s:Array.from(e.g,v=>Math.max(0,Math.min(9,Math.round(v*9)))).join('')}}
-function ampDec(o){return {aspect:o.a,g:Float32Array.from(o.s,c=>(+c)/9)}}
-function ampBankInit(){
-  AMP_BANK={};
-  const add=src=>{for(const ch in src){(AMP_BANK[ch]=AMP_BANK[ch]||[]).push(...src[ch].map(ampDec))}};
-  try{add(AMP_SEED)}catch(e){}
-  try{AMP_LEARNED=JSON.parse(localStorage.getItem('bb_ampbank57')||'{}');add(AMP_LEARNED)}catch(e){AMP_LEARNED={}}
-}
-function ampMarks(g,w,h){
-  const out=[],S=Math.min(w,h);
-  for(const pol of [0,1]){
-    const gg=pol?g.map(v=>255-v):g;
-    const dark=localDarkMask(gg,w,h,Math.max(6,Math.round(S*.25)),22);
-    const cs=markComponents(dark,w,h).filter(c=>{
-      const hi=Math.max(c.w,c.h),lo=Math.min(c.w,c.h),fill=c.pix.length/(c.w*c.h);
-      return hi>=0.09*h&&hi<=0.5*h&&lo>=0.05*h&&c.pix.length>=15&&fill>=0.15&&fill<=0.9&&hi<=2.2*lo+2&&c.x0>0&&c.y0>0&&c.x1<w-1&&c.y1<h-1;
-    });
-    for(const c of cs){
-      const sz=Math.max(c.w,c.h);
-      const nb=cs.some(d=>d!==c&&Math.abs(Math.max(d.w,d.h)-sz)<=0.35*sz&&((Math.abs((d.y0+d.y1)/2-(c.y0+c.y1)/2)<=0.4*sz&&Math.abs((d.x0+d.x1)/2-(c.x0+c.x1)/2)<=1.4*sz)||(Math.abs((d.x0+d.x1)/2-(c.x0+c.x1)/2)<=0.4*sz&&Math.abs((d.y0+d.y1)/2-(c.y0+c.y1)/2)<=1.4*sz)));
-      if(nb)out.push({x:(c.x0+c.x1)/2,y:(c.y0+c.y1)/2,x0:c.x0,x1:c.x1,y0:c.y0,y1:c.y1,sz,pol});
-    }
-  }
-  return out;
-}
-function ampColumnCandidates(cells,marksOut){
-  const w=cells[0].w,prof=new Float32Array(w),all=[];
-  cells.forEach((c,i)=>{
-    const ms=ampMarks(c.g,c.w,c.h);marksOut[i]=ms;ms.forEach(m=>all.push(m.sz));
-    const rp=new Float32Array(w);
-    for(const m of ms){const s=Math.max(3,0.8*m.sz);for(let x=Math.max(0,Math.floor(m.x-2*s));x<Math.min(w,m.x+2*s);x++){const v=Math.exp(-Math.pow((x-m.x)/s,2));if(v>rp[x])rp[x]=v}}
-    for(let x=0;x<w;x++)prof[x]+=rp[x];
-  });
-  all.sort((a,b)=>a-b);const msz=all[all.length>>1]||0.3*cells[0].h;
-  const peaks=[],p2=Float32Array.from(prof);
-  for(let k=0;k<3;k++){
-    let bx=-1,bv=0;for(let x=0;x<w;x++)if(p2[x]>bv){bv=p2[x];bx=x}
-    if(bx<0||bv<Math.max(1.5,0.2*cells.length))break;
-    peaks.push({cx:bx,support:bv});
-    for(let x=Math.max(0,Math.round(bx-2.5*msz));x<Math.min(w,bx+2.5*msz);x++)p2[x]=0;
-  }
-  return peaks.map(pk=>{const half=Math.max(1.3*msz,6);return {x0:Math.max(0,Math.round(pk.cx-half)),x1:Math.min(w,Math.round(pk.cx+half)),support:pk.support,cx:pk.cx}});
-}
-function cropGray(g,w,x0,y0,x1,y1){const cw=x1-x0,ch=y1-y0,o=new Float32Array(cw*ch);for(let y=0;y<ch;y++)for(let x=0;x<cw;x++)o[y*cw+x]=g[(y0+y)*w+x0+x];return o}
-function ampSubOf(c,ms,cx){
-  // group the marks that touch each other; the amp number is the group closest to the strip centre
-  const n=ms.length,par=ms.map((_,i)=>i),f=i=>par[i]===i?i:(par[i]=f(par[i]));
-  for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){
-    if(ms[i].pol!==ms[j].pol)continue;
-    const sz=Math.max(ms[i].sz,ms[j].sz);
-    if(Math.abs(ms[i].x-ms[j].x)<=1.5*sz&&Math.abs(ms[i].y-ms[j].y)<=1.5*sz&&Math.min(ms[i].sz,ms[j].sz)>=0.6*sz)par[f(i)]=f(j);
-  }
-  const cl={};ms.forEach((m,i)=>{(cl[f(i)]=cl[f(i)]||[]).push(m)});
-  let best=null;
-  for(const k in cl){
-    const G=cl[k];if(G.length<2||G.length>4)continue;
-    const mx=G.reduce((t,m)=>t+m.x,0)/G.length,sc=Math.abs(mx-cx)-3*G.length;
-    if(!best||sc<best.sc)best={sc,G};
-  }
-  const use=best?best.G:ms;
-  const x0=Math.min(...use.map(m=>m.x0)),x1=Math.max(...use.map(m=>m.x1)),y0=Math.min(...use.map(m=>m.y0)),y1=Math.max(...use.map(m=>m.y1));
-  const sz=Math.max(...use.map(m=>m.sz)),pad=Math.round(0.7*sz);
-  const bx0=Math.max(0,x0-pad),bx1=Math.min(c.w,x1+pad),by0=Math.max(0,y0-pad),by1=Math.min(c.h,y1+pad);
-  return {g:cropGray(c.g,c.w,bx0,by0,bx1,by1),w:bx1-bx0,h:by1-by0};
-}
-// cells: [{g,w,h}] of one column (same width). Returns, per row, a tight crop around the amp number or null.
-function ampSubs(cells){
-  if(!cells.length)return [];
-  const marks=[],cands=ampColumnCandidates(cells,marks);let best=null;
-  // try each candidate strip and keep the one whose crops read best as amp numbers
-  for(const col of cands){
-    const subs=cells.map((c,i)=>{const ms=marks[i].filter(m=>m.x>=col.x0&&m.x<=col.x1);return ms.length?ampSubOf(c,ms,col.cx):null});
-    let sc=0;
-    for(const s of subs){if(!s)continue;let q=null;try{q=ampRead(s.g,s.w,s.h)}catch(e){}if(q&&q.cost<0.75)sc+=0.75-q.cost}
-    if(!best||sc>best.sc)best={sc,subs};
-  }
-  return best?best.subs:cells.map(()=>null);
-}
-function ampGroups(g,w,h){
-  const res=[];
-  for(const pol of [0,1]){
-    const gg=pol?g.map(v=>255-v):g;
-    const dark=localDarkMask(gg,w,h,Math.max(6,Math.round(h*.25)),25);
-    const comps=[];
-    for(const c of markComponents(dark,w,h)){
-      if(!(c.h>=0.22*h&&c.h<=0.85*h&&c.pix.length>=8&&c.x0>0&&c.y0>0&&c.x1<w-1&&c.y1<h-1))continue;
-      if(c.w<=1.0*c.h){comps.push(c);continue}
-      if(c.w>2.6*c.h)continue;
-      comps.push(...splitGlued(c,w));
-    }
-    comps.sort((a,b)=>a.x0-b.x0);
-    const groups=[];
-    for(const c of comps){
-      const gr=groups.find(G=>{const l=G[G.length-1],hh=Math.max(l.h,c.h);return c.x0-l.x1<=0.9*hh&&Math.abs((c.y0+c.y1)/2-(l.y0+l.y1)/2)<=0.35*hh&&Math.min(l.h,c.h)/hh>=0.65});
-      if(gr)gr.push(c);else groups.push([c]);
-    }
-    for(const G of groups){if(G.length<2||G.length>3)continue;res.push({w,pieces:G.map(c=>({x0:c.x0,y0:c.y0,x1:c.x1,y1:c.y1,pix:c.pix}))})}
-  }
-  return res;
-}
-function digitCostB(P,ch,W,noBank){
-  const pg=P._g||(P._g=pieceGrid(P,W));let best=digitCost(P,ch,W)+0.12;
-  if(!noBank)for(const e of (AMP_BANK[ch]||[])){const c=gridDist(pg.g,e.g)*3+0.25*Math.abs(Math.log(pg.aspect/e.aspect));if(c<best)best=c}
-  return best;
-}
-function ampWordCost(gr,word,noBank){return word.split('').reduce((t,ch,k)=>t+digitCostB(gr.pieces[k],ch,gr.w,noBank),0)/word.length}
-function ampOrients(g,w,h){return [[g,w,h],[rotateGray(g,w,h,1),h,w],[rotateGray(g,w,h,-1),h,w]]}
-function ampRead(g,w,h){
-  const cands=[];
-  for(const [gg,ww,hh] of ampOrients(g,w,h))for(const gr of ampGroups(gg,ww,hh))
-    for(const word of AMP_WORDS.filter(a=>a.length===gr.pieces.length))cands.push({word,cost:ampWordCost(gr,word)+(AMP_RARE.has(word)?0.08:0)});
-  if(!cands.length)return null;
-  cands.sort((a,b)=>a.cost-b.cost);
-  const top=cands[0],other=cands.find(c=>c.word!==top.word);
-  return {word:top.word,cost:top.cost,margin:other?other.cost-top.cost:1,alts:[...new Set(cands.map(c=>c.word))].slice(0,4)};
-}
-// Stores the digit shapes of a value the person confirmed.
-function ampTeach(g,w,h,word,learn){
-  let best=null;
-  for(const [gg,ww,hh] of ampOrients(g,w,h))for(const gr of ampGroups(gg,ww,hh)){
-    if(gr.pieces.length!==word.length)continue;
-    const c=ampWordCost(gr,word,true);
-    if(!best||c<best.c)best={c,gr};
-  }
-  if(!best||best.c>1.1)return false;
-  best.gr.pieces.forEach((P,k)=>{
-    const e=pieceGrid(P,best.gr.w),ch=word[k];
-    (AMP_BANK[ch]=AMP_BANK[ch]||[]).push(e);
-    if(learn){const L=(AMP_LEARNED[ch]=AMP_LEARNED[ch]||[]);L.push(ampEnc(e));if(L.length>14)L.shift()}
-  });
-  return true;
-}
-function ampLearn(g,w,h,word){
-  if(!AMP_WORDS.includes(word))return;
-  if(ampTeach(g,w,h,word,true)){try{localStorage.setItem('bb_ampbank57',JSON.stringify(AMP_LEARNED))}catch(e){}}
-}
-// One row: the new reader first (Confirmed or Probable), the older two-pass reader as backup.
-function phReadAmp(cell,sub){
-  let old=null;try{old=readAmpsTier(cell.g,cell.w,cell.h)}catch(e){}
-  let nw=null;if(sub){try{nw=ampRead(sub.g,sub.w,sub.h)}catch(e){}}
-  if(nw&&nw.cost<0.45&&nw.margin>=0.06){
-    const agree=old&&old.sure&&old.top[0]===nw.word,strong=nw.cost<0.32&&nw.margin>=0.10;
-    const tier=(strong||agree)?'confirmed':'probable';
-    const pct=tier==='confirmed'?Math.min(97,Math.round(100*(1-nw.cost))+8):Math.max(40,Math.min(85,Math.round(100*(1-nw.cost))));
-    return {top:[nw.word].concat(old?old.top:[]),chips:[...new Set([nw.word].concat(nw.alts,old?old.chips:[]))].slice(0,5),tier,pct,sure:true};
-  }
-  return old||{top:[],chips:[],tier:'none',pct:0,sure:false};
-}
-
-ampBankInit();
 
 // Sketch import (Floors mode): finds closed room outlines in a photo of a hand-drawn plan.
 // OpenCV.js loads once, the first time this is used. Detection runs on this device.
@@ -1274,12 +970,11 @@ function skStage(stage){
     <p id="skMsg" class="sm" style="margin:0"></p>
     <canvas id="skc" class="fit" style="touch-action:none;border:1px solid var(--ln);border-radius:10px"></canvas>`;
   else{
-    const nRead=sk.cands.filter(c=>c.read).length;
     box.innerHTML=`<h3 style="margin:0">Check the rooms found</h3>
-    <p class="sm" style="margin:0">Uncheck any outline that isn't a room. ${nRead?'Names were read from your handwriting and can be wrong: check each one.':''} Sizes come from the scale.</p>
+    <p class="sm" style="margin:0">Uncheck any outline that isn't a room, then type each name from the picture. Sizes come from the scale.</p>
     <div class="row"><button data-act="skAdd">Add rooms</button><button data-act="phCancel">Cancel</button></div>
     <div class="pg skrev"><div class="pgl"><canvas id="skc" style="width:100%;display:block"></canvas></div><div class="pgr">
-    ${sk.cands.map((c,i)=>`<div class="skrow"><input type="checkbox" data-ck="${i}" checked><span class="sn">${i+1}</span><div class="skmain"><div class="row"><input data-nm="${i}" list="roomNames" placeholder="Room name" value="${esc(c.pre||'')}" style="flex:2"><span class="sm" style="flex:1;white-space:nowrap">${c.wf} × ${c.hf} ft</span></div>${c.pre?'':`<div class="nr">${c.read?'Not sure of this name: tap a suggestion or type it':'Name not recognized: type it'}</div>`}${c.read?`<div class="skhint">${c.read.crop?`<img src="${c.read.crop}" alt="Handwriting from the photo">`:''}${c.read.chips.map(n=>`<button class="tg" data-act="skPick" data-i="${i}" data-v="${esc(n)}">${esc(n)}</button>`).join('')}</div>`:''}</div></div>`).join('')||'<p class="sm">No rooms were found. Try a clearer, straighter photo.</p>'}
+    ${sk.cands.map((c,i)=>`<div class="skrow"><input type="checkbox" data-ck="${i}" checked><span class="sn">${i+1}</span><div class="skmain"><div class="row"><input data-nm="${i}" list="roomNames" placeholder="Room name" value="" style="flex:2"><span class="sm" style="flex:1;white-space:nowrap">${c.wf} × ${c.hf} ft</span></div></div></div>`).join('')||'<p class="sm">No rooms were found. Try a clearer, straighter photo.</p>'}
     </div></div>`;
   }
   drawSk();
@@ -1476,315 +1171,12 @@ function alignPolys(polys,tol,PX){
   return out;
 }
 
-// ---- Room name reader ----
-// ---- Room name reader (no downloads): reads handwritten block capitals by matching letters against your own handwriting. ----
-// Letter shapes: [width, stroke, stroke, ...]; each stroke is a list of [x,y] points in a 0..1 box (width scaled by the first number).
-const GL={
-A:[.70,[[0,1],[.5,0],[1,1]],[[.2,.68],[.8,.68]]],
-B:[.55,[[0,0],[0,1]],[[0,0],[.7,0],[1,.12],[1,.4],[.7,.5],[0,.5]],[[.7,.5],[1,.62],[1,.88],[.7,1],[0,1]]],
-C:[.60,[[1,.15],[.7,0],[.3,0],[0,.2],[0,.8],[.3,1],[.7,1],[1,.85]]],
-D:[.60,[[0,0],[0,1]],[[0,0],[.6,0],[1,.25],[1,.75],[.6,1],[0,1]]],
-E:[.50,[[1,0],[0,0],[0,1],[1,1]],[[0,.5],[.8,.5]]],
-F:[.50,[[1,0],[0,0],[0,1]],[[0,.5],[.8,.5]]],
-G:[.65,[[1,.2],[.7,0],[.3,0],[0,.2],[0,.8],[.3,1],[.7,1],[1,.8],[1,.55],[.55,.55]]],
-H:[.62,[[0,0],[0,1]],[[1,0],[1,1]],[[0,.5],[1,.5]]],
-I:[.20,[[.5,0],[.5,1]]],
-J:[.45,[[1,0],[1,.75],[.7,1],[.3,1],[0,.8]]],
-K:[.60,[[0,0],[0,1]],[[1,0],[0,.6]],[[.25,.45],[1,1]]],
-L:[.50,[[0,0],[0,1],[1,1]]],
-M:[.80,[[0,1],[0,0],[.5,.65],[1,0],[1,1]]],
-N:[.65,[[0,1],[0,0],[1,1],[1,0]]],
-O:[.65,[[.5,0],[.15,.1],[0,.35],[0,.65],[.15,.9],[.5,1],[.85,.9],[1,.65],[1,.35],[.85,.1],[.5,0]]],
-P:[.55,[[0,1],[0,0],[.7,0],[1,.15],[1,.4],[.7,.55],[0,.55]]],
-Q:[.65,[[.5,0],[.15,.1],[0,.35],[0,.65],[.15,.9],[.5,1],[.85,.9],[1,.65],[1,.35],[.85,.1],[.5,0]],[[.6,.7],[1,1.05]]],
-R:[.58,[[0,1],[0,0],[.7,0],[1,.15],[1,.4],[.7,.55],[0,.55]],[[.4,.55],[1,1]]],
-S:[.55,[[1,.15],[.7,0],[.3,0],[0,.15],[0,.4],[.3,.5],[.7,.55],[1,.65],[1,.85],[.7,1],[.3,1],[0,.85]]],
-T:[.60,[[0,0],[1,0]],[[.5,0],[.5,1]]],
-U:[.62,[[0,0],[0,.75],[.25,1],[.75,1],[1,.75],[1,0]]],
-V:[.65,[[0,0],[.5,1],[1,0]]],
-W:[.90,[[0,0],[.25,1],[.5,.4],[.75,1],[1,0]]],
-X:[.62,[[0,0],[1,1]],[[1,0],[0,1]]],
-Y:[.62,[[0,0],[.5,.5],[1,0]],[[.5,.5],[.5,1]]],
-Z:[.58,[[0,0],[1,0],[0,1],[1,1]]]
-};
-Object.assign(GL,GLD);
-const ROOM_WORDS0=['KITCHEN','BATH','BATHROOM','BEDROOM','BED','OFFICE','LIVING','ROOM','HALL','HALLWAY','DINING','LAUNDRY','GARAGE','UTILITY','STORAGE','FINISHED','FRONT','CLOSET','BASEMENT','FAMILY','MASTER','GUEST','STUDY','DEN','PANTRY','MUD','ENTRY','FOYER','PORCH','DECK','ATTIC','SHOP','WORKSHOP','MECHANICAL','FURNACE','SUNROOM','GREAT','PLAY','GAME','MEDIA','LIBRARY','LOFT','STAIRS','MAIN','HALF','POWDER','TOILET','WC','NOOK','COMMON','REAR','BACK','UNFINISHED','CRAWL','SPACE','COLD','WINE','CELLAR','GYM','SHED','BARN','LAB','SUITE','KIDS','NURSERY','SEWING','CRAFT','MUSIC','THEATER','BAR'];
-const ROOM_PHRASES=['LIVING ROOM','FRONT ROOM','FAMILY ROOM','MASTER BEDROOM','MASTER BATH','GAME ROOM','PLAY ROOM','GREAT ROOM','MUD ROOM','HALF BATH','LAUNDRY ROOM','DINING ROOM','POWDER ROOM','WINE CELLAR','CRAWL SPACE','COLD ROOM'];
-const ROOM_WORDS=ROOM_WORDS0.concat(ROOM_PHRASES);
-// Draws a word in the stroke font, height h pixels. Returns {w,h,a}: a is ink coverage 0..1.
-function renderWord(str,h){
-  const gap=.2,space=.45,sw=Math.max(1.5,h*.14);
-  let wUnits=0;const items=[];
-  for(const ch of str){if(ch===' '){wUnits+=space;continue}const g=GL[ch];if(!g)continue;items.push({g,x:wUnits});wUnits+=g[0]+gap}
-  wUnits=Math.max(.1,wUnits-gap);
-  const pad=Math.ceil(sw),W=Math.ceil(wUnits*h)+2*pad,H=h+2*pad+Math.ceil(h*.08),a=new Float32Array(W*H);
-  const stamp=(cx,cy)=>{const r=sw/2;for(let y=Math.floor(cy-r);y<=Math.ceil(cy+r);y++)for(let x=Math.floor(cx-r);x<=Math.ceil(cx+r);x++){if(x<0||y<0||x>=W||y>=H)continue;if((x-cx)*(x-cx)+(y-cy)*(y-cy)<=r*r)a[y*W+x]=1}};
-  for(const it of items){const gw=it.g[0];for(let s=1;s<it.g.length;s++){const P=it.g[s];for(let i=0;i<P.length-1;i++){const x0=pad+(it.x+P[i][0]*gw)*h,y0=pad+P[i][1]*h,x1=pad+(it.x+P[i+1][0]*gw)*h,y1=pad+P[i+1][1]*h,n=Math.ceil(Math.hypot(x1-x0,y1-y0)*2)+1;for(let k=0;k<=n;k++)stamp(x0+(x1-x0)*k/n,y0+(y1-y0)*k/n)}}}
-  return {w:W,h:H,a};
-}
-// Tight bounding box of the ink in a coverage array.
-function inkBox(a,W,H,t=.3){let x0=W,y0=H,x1=-1,y1=-1;for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(a[y*W+x]>t){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y}return x1<0?null:{x:x0,y:y0,w:x1-x0+1,h:y1-y0+1}}
-// Area-averages the box (bx,by,bw,bh) of a coverage array onto a gw x gh grid, then blurs a little.
-function toGrid(a,W,H,bx,by,bw,bh,gw,gh){
-  const g=new Float32Array(gw*gh);
-  for(let j=0;j<gh;j++)for(let i=0;i<gw;i++){
-    const x0=bx+i*bw/gw,x1=bx+(i+1)*bw/gw,y0=by+j*bh/gh,y1=by+(j+1)*bh/gh;let s=0,n=0;
-    for(let y=Math.floor(y0);y<Math.ceil(y1);y++)for(let x=Math.floor(x0);x<Math.ceil(x1);x++){if(x<0||y<0||x>=W||y>=H)continue;const wx=Math.min(x+1,x1)-Math.max(x,x0),wy=Math.min(y+1,y1)-Math.max(y,y0);if(wx<=0||wy<=0)continue;s+=a[y*W+x]*wx*wy;n+=wx*wy}
-    g[j*gw+i]=n?s/n:0;
-  }
-  return blur(blur(g,gw,gh),gw,gh);
-}
 function blur(g,w,h){const o=new Float32Array(w*h),t=new Float32Array(w*h);for(let y=0;y<h;y++)for(let x=0;x<w;x++){const l=g[y*w+Math.max(0,x-1)],c=g[y*w+x],r=g[y*w+Math.min(w-1,x+1)];t[y*w+x]=(l+2*c+r)/4}for(let y=0;y<h;y++)for(let x=0;x<w;x++){const u=t[Math.max(0,y-1)*w+x],c=t[y*w+x],d=t[Math.min(h-1,y+1)*w+x];o[y*w+x]=(u+2*c+d)/4}return o}
-
-// Finds the handwriting inside each room: dark marks that are not part of the long walls, grouped into lines.
-function localDarkMask(g,W,H,R,off){
-  const integ=new Float64Array((W+1)*(H+1));
-  for(let y=0;y<H;y++){let row=0;for(let x=0;x<W;x++){row+=g[y*W+x];integ[(y+1)*(W+1)+x+1]=integ[y*(W+1)+x+1]+row}}
-  const m=new Uint8Array(W*H);
-  for(let y=0;y<H;y++)for(let x=0;x<W;x++){
-    const x0=Math.max(0,x-R),x1=Math.min(W-1,x+R),y0=Math.max(0,y-R),y1=Math.min(H-1,y+R);
-    const S=integ[(y1+1)*(W+1)+x1+1]-integ[y0*(W+1)+x1+1]-integ[(y1+1)*(W+1)+x0]+integ[y0*(W+1)+x0];
-    m[y*W+x]=g[y*W+x]<S/((x1-x0+1)*(y1-y0+1))-off?1:0;
-  }
-  return m;
-}
-// Removes straight runs longer than minRun (walls), keeping handwriting, whose strokes are shorter.
-function stripLongRuns(m,W,H,minRun){
-  const out=m.slice();
-  for(let y=0;y<H;y++){let x=0;while(x<W){if(!m[y*W+x]){x++;continue}let e=x;while(e<W&&m[y*W+e])e++;if(e-x>=minRun)for(let k=x;k<e;k++)out[y*W+k]=0;x=e}}
-  for(let x=0;x<W;x++){let y=0;while(y<H){if(!m[y*W+x]){y++;continue}let e=y;while(e<H&&m[e*W+x])e++;if(e-y>=minRun)for(let k=y;k<e;k++)out[k*W+x]=0;y=e}}
-  return out;
-}
-function markComponents(m,W,H){
-  const lab=new Int32Array(W*H),comps=[],stack=new Int32Array(W*H);
-  for(let i=0;i<W*H;i++){
-    if(!m[i]||lab[i])continue;
-    const id=comps.length+1;let sp=0;stack[sp++]=i;lab[i]=id;const pix=[];let x0=W,y0=H,x1=0,y1=0;
-    while(sp){const p=stack[--sp];pix.push(p);const x=p%W,y=(p-x)/W;if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;
-      for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const xx=x+dx,yy=y+dy;if(xx<0||yy<0||xx>=W||yy>=H)continue;const q=yy*W+xx;if(m[q]&&!lab[q]){lab[q]=id;stack[sp++]=q}}}
-    comps.push({pix,x0,y0,x1,y1,w:x1-x0+1,h:y1-y0+1});
-  }
-  return comps;
-}
-// Splits the dark marks into the wall network (big connected pieces) and loose marks. Writing that touches a wall is
-// recovered by cutting the long straight runs out of the big pieces and keeping only compact leftovers.
-function handwritingComponents(dark,W,H){
-  const all=markComponents(dark,W,H);
-  const big=all.filter(c=>Math.max(c.w,c.h)>=90||c.pix.length>1800);
-  const loose=all.filter(c=>!(Math.max(c.w,c.h)>=90||c.pix.length>1800));
-  let out=loose.slice();
-  const lh=loose.filter(c=>c.h>=10&&c.h<=60).map(c=>c.h).sort((p,q)=>p-q),minRun=Math.max(30,Math.round(1.35*(lh[Math.floor(lh.length*0.75)]||28)));
-  if(big.length){
-    const m=new Uint8Array(W*H);big.forEach(c=>c.pix.forEach(p=>{m[p]=1}));
-    const cut=stripLongRuns(m,W,H,minRun);
-    for(const c of markComponents(cut,W,H)){
-      const ar=Math.max(c.w,c.h)/Math.max(1,Math.min(c.w,c.h));
-      if(c.pix.length>=8&&c.h>=8&&c.h<=60&&c.w<=60&&ar<=4)out.push(c);
-    }
-  }
-  return out;
-}
-// room: {x,y,w,h,poly?} in working-pixel units. Returns lines: [{x,y,w,h,mask(W*H crop)}], top to bottom.
-function textLinesInRoom(comps0,W,H,room){
-  const inside=(x,y)=>{
-    const m=3;
-    if(x<room.x+m||y<room.y+m||x>room.x+room.w-m||y>room.y+room.h-m)return false;
-    return room.poly?inPoly({x,y},room.poly):true;
-  };
-  let comps=comps0.filter(c=>c.pix.length>=5&&inside((c.x0+c.x1)/2,(c.y0+c.y1)/2));
-  comps=comps.filter(c=>c.h<=70&&c.w<=140);
-  if(!comps.length)return[];
-  const hs=comps.map(c=>c.h).sort((a,b)=>a-b),href=hs[Math.floor(hs.length*0.75)];
-  const small=comps.filter(c=>c.h>=0.4*href||c.w>=0.4*href);
-  const par=small.map((_,i)=>i),find=i=>par[i]===i?i:(par[i]=find(par[i]));
-  for(let i=0;i<small.length;i++)for(let j=i+1;j<small.length;j++){
-    const a=small[i],b=small[j];
-    const gapX=Math.max(0,Math.max(a.x0,b.x0)-Math.min(a.x1,b.x1)),ov=Math.min(a.y1,b.y1)-Math.max(a.y0,b.y0);
-    if(gapX<=1.1*href&&ov>=0.3*Math.min(a.h,b.h))par[find(i)]=find(j);
-  }
-  const groups={};small.forEach((c,i)=>{(groups[find(i)]=groups[find(i)]||[]).push(c)});
-  const lines=[];
-  for(const g of Object.values(groups)){
-    let x0=W,y0=H,x1=0,y1=0,n=0;for(const c of g){x0=Math.min(x0,c.x0);y0=Math.min(y0,c.y0);x1=Math.max(x1,c.x1);y1=Math.max(y1,c.y1);n+=c.pix.length}
-    const w=x1-x0+1,h=y1-y0+1;
-    if(h<0.5*href||(g.length<2&&w<0.5*href))continue;
-    const mask=new Uint8Array(w*h);for(const c of g)for(const p of c.pix){const x=p%W,y=(p-x)/W;mask[(y-y0)*w+(x-x0)]=1}
-    lines.push({x:x0,y:y0,w,h,mask,n,ncomp:g.length,comps:g});
-  }
-  return lines.sort((a,b)=>a.y-b.y);
-}
 
 // ---- Letter-level reading: split a line into letter pieces, then decode against the room-name list. ----
 const LG_W=8,LG_H=10;
-// A piece is {x0,y0,x1,y1,pix:[index...]} from a W-wide image. Pieces that overlap sideways are one letter.
-function mergePieces(comps,W){
-  const ps=comps.map(c=>({x0:c.x0,y0:c.y0,x1:c.x1,y1:c.y1,pix:c.pix.slice()})).sort((a,b)=>a.x0-b.x0);
-  let changed=true;
-  while(changed){
-    changed=false;
-    for(let i=0;i<ps.length&&!changed;i++)for(let j=i+1;j<ps.length;j++){
-      const a=ps[i],b=ps[j],ov=Math.min(a.x1,b.x1)-Math.max(a.x0,b.x0)+1,mw=Math.min(a.x1-a.x0+1,b.x1-b.x0+1);
-      if(ov>=0.5*mw){a.x0=Math.min(a.x0,b.x0);a.x1=Math.max(a.x1,b.x1);a.y0=Math.min(a.y0,b.y0);a.y1=Math.max(a.y1,b.y1);a.pix=a.pix.concat(b.pix);ps.splice(j,1);changed=true;break}
-    }
-    ps.sort((a,b)=>a.x0-b.x0);
-  }
-  return ps;
-}
-function pieceGrid(p,W){
-  const w=p.x1-p.x0+1,h=p.y1-p.y0+1,a=new Float32Array(w*h);
-  for(const q of p.pix){const x=q%W,y=(q-x)/W;a[(y-p.y0)*w+(x-p.x0)]=1}
-  return {aspect:w/h,g:toGrid(a,w,h,0,0,w,h,LG_W,LG_H)};
-}
-function unionPiece(a,b){return {x0:Math.min(a.x0,b.x0),y0:Math.min(a.y0,b.y0),x1:Math.max(a.x1,b.x1),y1:Math.max(a.y1,b.y1),pix:a.pix.concat(b.pix)}}
-const _strokeLetter={};
-function strokeLetterGrid(str){
-  if(_strokeLetter[str])return _strokeLetter[str];
-  const r=renderWord(str,30),b=inkBox(r.a,r.w,r.h,.5);
-  return _strokeLetter[str]={aspect:b.w/b.h,g:toGrid(r.a,r.w,r.h,b.x,b.y,b.w,b.h,LG_W,LG_H)};
-}
-function gridDist(a,b){let s=0;for(let i=0;i<a.length;i++)s+=Math.abs(a[i]-b[i]);return s/a.length}
-// bank: {A:[{aspect,g}], ...} of examples written by the person. Strokes from the built-in font are always tried too.
-function letterCost(P,ch,bank,W){
-  const pg=P._g||(P._g=pieceGrid(P,W));let best=9;
-  if(P._bid!==bank._id){P._lc={};P._gl={};P._bid=bank._id}
-  if(P._lc[ch]!==undefined)return P._lc[ch];
-  const tryT=(t,bonus)=>{const c=gridDist(pg.g,t.g)*3+0.25*Math.abs(Math.log(pg.aspect/t.aspect))-bonus;if(c<best)best=c};
-  tryT(strokeLetterGrid(ch),0);
-  for(const e of (bank[ch]||[]))tryT(e,0.04);
-  return P._lc[ch]=best;
-}
-// Expected look of several letters written together: each letter's usual shape, side by side.
-function meanLetter(ch,bank){
-  const ex=bank[ch];if(!ex||!ex.length)return strokeLetterGrid(ch);
-  const g=new Float32Array(LG_W*LG_H);let asp=0;for(const e of ex){for(let i=0;i<g.length;i++)g[i]+=e.g[i]/ex.length;asp+=e.aspect/ex.length}
-  return {aspect:asp,g};
-}
-function glueCost(P,str,bank,W){
-  if(P._bid!==bank._id){P._lc={};P._gl={};P._bid=bank._id}
-  if(P._gl[str]!==undefined)return P._gl[str];
-  const k=str.length,cols=LG_W*k;
-  const tg=new Float32Array(cols*LG_H);
-  // template strip: each letter takes a share of the width proportional to its aspect
-  const ls=str.split('').map(c=>meanLetter(c,bank)),tot=ls.reduce((s,l)=>s+l.aspect,0);
-  let x0=0;
-  for(const l of ls){
-    const w=Math.max(1,Math.round(cols*l.aspect/tot)),x1=Math.min(cols,x0+w);
-    for(let x=x0;x<x1;x++){const sx=Math.min(LG_W-1,Math.floor((x-x0)*LG_W/(x1-x0)));for(let y=0;y<LG_H;y++)tg[y*cols+x]=l.g[y*LG_W+sx]}
-    x0=x1;
-  }
-  const w=P.x1-P.x0+1,h=P.y1-P.y0+1,a=new Float32Array(w*h);
-  for(const q of P.pix){const x=q%W,y=(q-x)/W;a[(y-P.y0)*w+(x-P.x0)]=1}
-  const pg=toGrid(a,w,h,0,0,w,h,cols,LG_H);
-  return P._gl[str]=gridDist(pg,tg)*3+0.25*Math.abs(Math.log((w/h)/tot))+0.1*(k-1);
-}
-// Aligns the pieces with the letters of one word. Returns {cost: average per letter, ones: [[piece index, letter index], ...]}.
-function decodeWord(pieces,word,bank,W){
-  const L=word.replace(/ /g,'').split(''),n=L.length,m=pieces.length,INF=1e9;
-  const D=Array.from({length:m+1},()=>new Array(n+1).fill(INF)),B=Array.from({length:m+1},()=>new Array(n+1).fill(null));D[0][0]=0;
-  const upd=(i,j,c,from,kind)=>{if(c<D[i][j]){D[i][j]=c;B[i][j]={from,kind}}};
-  for(let i=0;i<=m;i++)for(let j=0;j<=n;j++){
-    const cur=D[i][j];if(cur>=INF)continue;
-    if(i<m&&j<n)upd(i+1,j+1,cur+letterCost(pieces[i],L[j],bank,W),[i,j],'one');
-    if(i<m)for(let k=2;k<=3&&j+k<=n;k++)upd(i+1,j+k,cur+glueCost(pieces[i],L.slice(j,j+k).join(''),bank,W),[i,j],'glue');
-    if(i+1<m&&j<n)upd(i+2,j+1,cur+letterCost(unionPiece(pieces[i],pieces[i+1]),L[j],bank,W)+0.1,[i,j],'split');
-    if(i<m)upd(i+1,j,cur+0.45,[i,j],'stray');
-    if(j<n)upd(i,j+1,cur+0.6,[i,j],'miss');
-  }
-  const ones=[];let i=m,j=n;
-  while(B[i]&&B[i][j]){const b=B[i][j];if(b.kind==='one')ones.push([b.from[0],b.from[1]]);[i,j]=b.from}
-  return {cost:D[m][n]/n,ones};
-}
-function rankLetters(pieces,words,bank,W){
-  return words.map(w=>({word:w,score:-decodeWord(pieces,w,bank,W).cost})).sort((a,b)=>b.score-a.score);
-}
-
-// Learns letter shapes from lines whose words are known (two passes, so lines with joined letters also help).
-let _bankId=0;
-const newBank=()=>({_id:++_bankId});
-function buildBank(lines){
-  let bank=newBank();
-  const add=(bk,d,pi,ch)=>{(bk[ch]=bk[ch]||[]).push(pieceGrid(d.pieces[pi],d.W))};
-  for(const d of lines){const L=d.word.split('');if(d.pieces.length===L.length)d.pieces.forEach((p,i)=>add(bank,d,i,L[i]))}
-  for(let round=0;round<2;round++){
-    const next=newBank();
-    for(const d of lines){
-      const L=d.word.replace(/ /g,'').split('');
-      const r=decodeWord(d.pieces,d.word,bank,d.W);
-      for(const [pi,li] of r.ones)add(next,d,pi,L[li]);
-    }
-    bank=next;
-  }
-  return bank;
-}
-
-// ---- Handwriting memory: letter shapes from the built-in samples plus the corrections made in this browser. ----
-const INK_SEED={"E":["1.17:fgillg82kifdc941oia54432ng844676mhb8acb9nlheec96nnkfb853kmkd9888fklhfhjkcjppprst","0.78:9bfjke61ijjjhb41qnieb632tld98876sleceedarnjiihd9nmkigda7jlkhfedbgmomllkifnsrponm","0.61:9ejmpqomgjlkiigennkebaaapokdbbddnpmhfffemomheca8lmic8753lmida976kooljhebjpttrnhc","0.75:bfkmg820ijigb520qle85311tmb53443tnfa9997spkgeda8rqlgc975ookd9765illifeeddinpponm"],"G":["1.10:4ahkje718dfdb841dfb63210hf932110ke867631lfacge84kfcgmmf9hgfhlmifbehhhghk6cggcafl","1.00:39hkf7207bfd9410bdc74200ge965420je88cb51ld79hib4le8bjmgajgcejlkheghgffimaehfb9fn","0.76:4biic4108fjg9310eiib5200kkf73100olfb7310rmjjf931sonomg94sqpolie9mnnieegggjic79gl"],"A":["0.83:bkoja300bimkd610cgiiga41efedge82hhcafid7ljecfkidolgcdhjjpkd879eiqi83237cqg610136","0.67:2akmd4104cnph7206fqunc419jtwsh72bluxunc5enuvvrjcipsstupinqokmqqmrqjcchjivqg758bb"],"R":["0.96:8cgiid61cccdfd61gd89dc61heaaca41ggfec720eikhd842chigdb989eeb9bde7ba646ad69941247","0.80:8hprqlb4ejlkkke6mlgcfjf7tneafjd6wpgeih93xrmllf62vtrqng84qrpnmjeamnkfeghhklh96agk","0.77:ahmjb410eikjd510kihhd610okhgc510solib410usqld732rrplgda8mlieeffeggb779bdcd931357","0.92:imonjd51kkighe82kidbef93hhdbee72dhhgea41bimke8319iomgb758fljgedd5adcabeh257535ag"],"O":["1.21:9dhjkoolffdbchnpmg945blsqg612aluqg613bmsqg625emoph859hkhmjebfjgagjkjjha4bhnokd62","0.81:afmrsne6gjlmonjemlgdflonqlb69jqstla5akqqtlb8enokqleelplekkklpnf8djoqng839iqqja41","0.67:3amtqh836eousme8aiprrqnigmokkpsrnplddmuwuskbbluyxtldenuwutokmqrqlprssqkfdkswune7","0.71:bjswwsjbinqqqrniqqmhiorrvqh9bltwwoc6bmuxvmb7eoutwoeckrrmvrkkprmeqqqrsne7intvrj93","0.79:ekppqojdkljggjkjqlc77ckpsk9229jssj8229ktrj824cmsnjb58hnoiifcfllhafikmmg95bkqqkb4"],"T":["1.19:57cgkkif9bdhiea7babefa42656be930114afa30003aea300029ea400027db510016dc610015cd71","1.59:knqomlllijlnnmjibbdjlida347fhc63015df930014cf920004bfa30003afa300039eb400029ec41","1.14:ceinrsrpjkmonlhfijllhb759aehd621239ec510027dc610017dd710016de720014be820003ad820"],"S":["0.79:36acc9418bcb8520egfa6321efeb9754789abccb22358dhi00247cgh0247acca259ba96438cc8421","0.79:9fkh8200fije6200nmjd8421nmkheb75efggggfd5678bfkm11237emp0015bill013ahjhc015ejib5"],"D":["0.63:mlje9521mmkheb74jkiefgechie9afkmehd67emrcgfabhnoagjhikjf8gmmkhb67flke9428eie7310","0.72:qi942100slea6421rmheca64ojebcdcalha67cghjg934ahlggb56djkcecadhif7adfhhd836chhd73"],"H":["0.75:74128b82e9338da4kd538fd6kg95agf9jifcfjicilliikjfhmmhdfihfjia69fjbfd636di8cb524ag","0.72:mg9afe72mh99fg93ni97eid6ojc9ejhapmgcejkgqnhcbgkmqme76bjonja338flkha3159bihb31234","0.61:lkd52221mle76852nmf9bec6nmf9djicongaelmhrpjegmojurkefkmjupg99fhgslb448a9qj922443","0.71:9634bhd6ea54ahf8ie85aiickhb8dlnjlkhehmpolmkgfjoqllhb9ckpkic537flkha3149dkha30245"],"I":["0.35:gmng7200gnrne610cltund416fqwtk822amvwoc317iswrf515eqwsh803bnvulb018jtvpi015fqwup","0.17:zzywtqqqzzzywvuuzzzzyyyyzzzzzzzzzzzzzzzzzzzzzzzzyzzzzzzzvwxyzzyylosvxxwvbfmswwtq","0.25:7grvqg728hsxumc5fmuyxqf6oswzysg7ptwzysg7kpvyysh7iovyysjajovyytkcgnuyysjacktyysh7","0.19:zzzzxob2zzzzxob2zzzzxob2zzzzxoc3zzzzxpe6zzzzxrhayyzzyskftvxzyvrojouyzyxwahrxzzzz","0.22:uvwria41lotupg71agqwvma24cpxxpc42boxxric2boxywrp2boxzyxx2bnwzzyy29ktxxvt17gpuuro","0.17:yyytlc51uvxwri82kouxwna29gqxxob33coxxqf72boxytmh2boxzxus2bnwzyyy29luyzzz28irwyzz"],"N":["0.81:321017eh962028gkic5128hmojb439inqoh959inqpmfacjnnnkigimpkifehlopgea8cimmdc746chi","0.78:221015ci774116ejge9327fkkkf748glimkd7ainelnidfmrcjlhgkqvbghdeksw9ee88ems9dc648gm","0.78:652117hqdb6217hrihc537irikib68irhkjfccipghgffglpggdadinqggb68elpfgb438dgdea31368","0.80:110016el531017iqd83129lukf833anvole75cnuookdbgosmmjgglpqijgdglonegd89dggceb53688","0.52:10015ekk43216flkba637flkiie88glkjnmfchmkgnqliknlbjponoqo7fmnnqst4ckkimru3bjiegns","0.50:32116eheb9537gkhjid8aimjjmlfeknkelqnlnol9iqrprrp5enpprtt3blmjkno29jkebcd18hjb544"],"F":["0.71:eggfghjjkkheccbaole97643nkd76642llhdcb85illhfda6ejkea854chg93211agf710009ee71000","0.82:mnprrqolrpmkigeduoga7654slb41111pkb52210nmhc9742momifb73immhda63djib6421agg82100","0.71:hknoppnmkljhgfedmke86544kjc52211ijf96521fkkgc841cjlhc7319gid73108eg931007df82000","0.64:mprrqmf9rpligea6une86654ulb54566smea9aa9qokgeca7nokea753jkg94210ehe61000cge61000"],"L":["0.75:jlg71000lmh71000moi81000noj81000noi81000mnh71000nnh83234opkebabbmonlkjihgknoomjf","0.73:mja20000mja20000mja20000mja20000mja20000oka20000qmd52221pnhb9887ijjhhhhg9cgjklmm","0.89:qph71000poh71000ong71000nng71000nng71000nng71000nnh83221nokd9876orqmjgecosvuqlhe","0.65:xqf51000xrg61000ysh61000ysh61000ysh61000ysh61000yti83222yumea999ywrligedzwsokhdb","0.50:mssi7100svsi7100xxti7100zyti7100zyti7100zyti7100zyuk9422yyvogb98wxxuplifswyywsnj"],"U":["1.10:kb3016dine4116flqg6116fmqh7116elqi8227fini9339efkic55bebfhfabec7afjihf946dlole62"],"M":["0.92:1114bfb47426eje7gb6ajniaojeflokdqolkjkjgpomiefijlkgb7ahlhf9437flca5115el763114dl"],"V":["0.89:gb513blqjg934dlnjje77fkjdihbbikf7diggljc39hlnnh915fosoe603alrnc3016gmj92004bhe61"],"C":["0.57:0139horr149fjkih39hkic867fmkc521dkmf6100jnkb3000noi82111nnib7666ilmjhgfecjprrqom","0.70:0149gie8138ehfa639fhe8438eif8310fjh93100mld51000smb31233tnd778aapnjgfgfejnppmjfd"],"B":["0.65:fjkjfa41jljgfd72kmjegga4fkjghib4bilkljc69hmmljfd7fljggik5cigcdjm39fgfhji26djmnjd"]};
-const decodeInk=list=>list.map(s=>{const i=s.indexOf(':');return {aspect:+s.slice(0,i),g:Float32Array.from(s.slice(i+1),ch=>parseInt(ch,36)/35)}});
-const encodeInk=e=>e.aspect.toFixed(2)+':'+Array.from(e.g,v=>Math.max(0,Math.min(35,Math.round(v*35))).toString(36)).join('');
-let inkPersonal={},inkWords=[];
-try{inkPersonal=JSON.parse(localStorage.getItem('breakerbook-ink')||'{}');inkWords=JSON.parse(localStorage.getItem('breakerbook-words')||'[]')}catch(e){}
-let _inkBank=null;
-function inkBank(){
-  if(_inkBank)return _inkBank;
-  const b=newBank();
-  for(const ch of Object.keys(INK_SEED))b[ch]=decodeInk(INK_SEED[ch]);
-  for(const ch of Object.keys(inkPersonal))b[ch]=(b[ch]||[]).concat(decodeInk(inkPersonal[ch]));
-  return _inkBank=b;
-}
 const titleCase=s=>s.toLowerCase().replace(/\b[a-z]/g,c=>c.toUpperCase());
 const ROOM_NAME_LIST=['Kitchen','Living Room','Dining Room','Family Room','Front Room','Great Room','Bedroom','Master Bedroom','Guest Bedroom','Bathroom','Bath','Half Bath','Powder Room','Hall','Hallway','Foyer','Entry','Mud Room','Laundry','Laundry Room','Garage','Office','Study','Den','Utility','Storage','Finished','Unfinished','Basement','Furnace Room','Workshop','Closet','Pantry','Attic','Porch','Deck','Sunroom','Game Room','Play Room','Media Room','Crawl Space','Cold Room'];
-// Reads the handwriting inside each room found. Returns one entry per room: null (nothing readable) or {guess, sure, chips, crop, lines}.
-function readRoomNames(gray,W,H,found,sc){
-  const comps=handwritingComponents(localDarkMask(gray,W,H,20,14),W,H);
-  const bank=inkBank(),vocab=ROOM_WORDS.concat(inkWords.filter(w=>!ROOM_WORDS.includes(w)));
-  return found.map(c=>{
-    const room={x:c.x/sc,y:c.y/sc,w:c.w/sc,h:c.h/sc,poly:c.poly?c.poly.map(p=>({x:p.x/sc,y:p.y/sc})):null};
-    const lines=textLinesInRoom(comps,W,H,room).filter(l=>!(l.ncomp<2&&l.n/(l.w*l.h)<0.14)).map(l=>{
-      const pieces=mergePieces(l.comps,W),rk=rankLetters(pieces,vocab,bank,W);
-      return {x:l.x,y:l.y,w:l.w,h:l.h,pieces,top:rk.slice(0,3),good:rk[0].score>-0.46};
-    }).filter(l=>l.good&&l.pieces.length>=2);   // single blobs are wall corners or smudges, not words
-    if(!lines.length)return null;
-    const guess=titleCase(lines.map(l=>l.top[0].word).join(' '));
-    const m=lines.map(l=>l.top[0].score-l.top[1].score);
-    const sure=m[0]>=0.04&&lines.slice(1).every((l,i)=>l.top[0].word==='ROOM'||m[i+1]>=0.04);
-    const chips=[guess];
-    if(lines.length===1)lines[0].top.slice(1).forEach(t=>chips.push(titleCase(t.word)));
-    return {lines,guess,sure,chips:[...new Set(chips)],crop:cropLines(lines,W)};
-  });
-}
-// Small picture of the handwriting, shown beside the name box so it is easy to check.
-function cropLines(lines,Wk){
-  try{
-    const s=sk.img.width/Wk;let x0=1e9,y0=1e9,x1=-1,y1=-1;
-    lines.forEach(l=>{x0=Math.min(x0,l.x);y0=Math.min(y0,l.y);x1=Math.max(x1,l.x+l.w);y1=Math.max(y1,l.y+l.h)});
-    x0=Math.max(0,x0-6);y0=Math.max(0,y0-6);x1=Math.min(Wk,x1+6);y1=y1+6;
-    const sw=(x1-x0)*s,sh=(y1-y0)*s,k=Math.min(1,150/sw,60/sh),cv=document.createElement('canvas');
-    cv.width=Math.max(1,Math.round(sw*k));cv.height=Math.max(1,Math.round(sh*k));
-    cv.getContext('2d').drawImage(sk.img,x0*s,y0*s,sw,sh,0,0,cv.width,cv.height);
-    return cv.toDataURL('image/jpeg',0.7);
-  }catch(e){return ''}
-}
-// The name the person confirmed teaches the reader their handwriting (kept only in this browser).
-function learnFromCandidate(c,typed){
-  try{
-    const rd=c.read;if(!rd||!rd.lines.length)return;
-    const words=typed.toUpperCase().replace(/[^A-Z ]/g,' ').trim().split(/\s+/).filter(Boolean);
-    if(!words.length)return;
-    const per=words.length===rd.lines.length?words:rd.lines.length===1?[words.join(' ')]:null;
-    if(!per)return;
-    const bank=inkBank();let learned=false;
-    per.forEach((word,k)=>{
-      const line=rd.lines[k],L=word.replace(/ /g,'').split(''),r=decodeWord(line.pieces,word,bank,c.W);
-      if(r.cost>0.5)return;
-      const pairs=line.pieces.length===L.length?L.map((ch,i)=>[i,i]):r.ones;
-      for(const [pi,li] of pairs){const ch=L[li];if(!/[A-Z]/.test(ch))continue;(inkPersonal[ch]=inkPersonal[ch]||[]).push(encodeInk(pieceGrid(line.pieces[pi],c.W)));if(inkPersonal[ch].length>8)inkPersonal[ch].shift();learned=true}
-      word.split(' ').forEach(w=>{if(w.length>=3&&!ROOM_WORDS.includes(w)&&!inkWords.includes(w))inkWords.push(w)});
-    });
-    if(inkWords.length>60)inkWords=inkWords.slice(-60);
-    if(learned){localStorage.setItem('breakerbook-ink',JSON.stringify(inkPersonal));localStorage.setItem('breakerbook-words',JSON.stringify(inkWords));_inkBank=null}
-  }catch(e){}
-}
-
 async function skDetect(){
   const ft=+$('skFt').value;
   if(sk.pts.length<2){skMsg('Tap two points on a wall first.');return}
@@ -1800,9 +1192,7 @@ async function skDetect(){
     const gray=new Uint8Array(Wk*Hk);
     for(let i=0;i<Wk*Hk;i++)gray[i]=(d[i*4]*0.3+d[i*4+1]*0.59+d[i*4+2]*0.11)|0;
     const found=findRoomsMerged(gray,Wk,Hk,sk.img.width/Wk);
-    let reads=[];
-    try{reads=readRoomNames(gray,Wk,Hk,found,sk.img.width/Wk)}catch(err){reads=[]}
-    sk.cands=found.map((r,i)=>{const rd=reads[i]||null;return {...r,wf:clamp(Math.round(r.w*sk.k),1,200),hf:clamp(Math.round(r.h*sk.k),1,200),read:rd,W:Wk,pre:rd&&rd.sure?rd.guess:''}});
+    sk.cands=found.map(r=>({...r,wf:clamp(Math.round(r.w*sk.k),1,200),hf:clamp(Math.round(r.h*sk.k),1,200),W:Wk}));
     skStage('review');
   }catch(err){skMsg('Could not finish: '+((err&&err.message)||err)+'. Try a clearer photo.')}
 }
@@ -1817,7 +1207,6 @@ function skAdd(){
     const Q=aligned[j];
     const typed=(document.querySelector(`[data-nm="${i}"]`)?.value||'').trim();
     const name=typed||`Room ${i+1}`;
-    if(typed)learnFromCandidate(c,typed);
     const mx=Math.min(...Q.map(p=>p.x)),my=Math.min(...Q.map(p=>p.y));
     const pw=Math.max(...Q.map(p=>p.x))-mx,ph=Math.max(...Q.map(p=>p.y))-my;
     const r={id:uid('r'),floor:cur,name,x:mx,y:my,w:Math.max(1,Math.round(ph/PX)),h:Math.max(1,Math.round(pw/PX))};
@@ -2057,7 +1446,6 @@ document.addEventListener('click',e=>{
   else if(a==='phRead'){if(phCtx.closeup){phCtx.cols=1;phCtx.side=$('phSide')?.value||phCtx.side||'left'}else{phCtx.cols=+($('phCols')?.value||2);phCtx.side=null}phProcess();changed=false}
   else if(a==='phAmp'){const el=document.querySelector(`[data-pa="${t.dataset.i}"]`);if(el)el.value=t.dataset.v;changed=false}
   else if(a==='phSame'){const i=+t.dataset.i,a0=document.querySelector(`[data-pl="${i-1}"]`),el=document.querySelector(`[data-pl="${i}"]`);if(el&&a0)el.value=a0.value;changed=false}
-  else if(a==='phLab'){const el=document.querySelector(`[data-pl="${t.dataset.i}"]`);if(el)el.value=t.dataset.v;changed=false}
   else if(a==='phApply'){applyGuide()}
   else if(a==='phConfirm'){
     let upd=0;
@@ -2072,7 +1460,6 @@ document.addEventListener('click',e=>{
     finishPhoto(phPending.added,phPending.conflicts.length);
   }
   else if(a==='pickPanel'){curPanel=id;bform=null;changed=false}
-  else if(a==='skPick'){const el=document.querySelector(`[data-nm="${t.dataset.i}"]`);if(el)el.value=t.dataset.v;changed=false}
   else if(a==='undo'){
     if(undoStack.length){S=JSON.parse(undoStack.pop());lastSnap=snapKey();sel=null;bform=null;setStat('Undone.')}
     else setStat('Nothing to undo.');
@@ -2156,6 +1543,7 @@ document.addEventListener('click',e=>{
   render();
 });
 
+document.addEventListener('focusin',e=>{const rw=e.target.closest&&e.target.closest('[data-ri]');if(rw&&$('phov'))drawPhOv(+rw.dataset.ri)});
 document.addEventListener('change',e=>{
   if(e.target.id==='pFloor'){$('pRoom').innerHTML=panelRoomOpts(+e.target.value);return}
 
