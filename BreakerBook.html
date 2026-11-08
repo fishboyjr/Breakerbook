@@ -210,6 +210,46 @@ let VW=960,VH=640; // starting plan size (960 px = about 68.5 ft at 14 px per ft
 const PW=100,PH=44;   // panel object size in px (small box)
 const blank=()=>({version:3,updated:'',address:'',showAddress:true,mainShutoff:'',evCharger:'',setupDone:false,floors:[],panels:[],rooms:[],breakers:[],devices:[]});
 let S=blank(),cur=0,sel=null,drag=null,noGrid=false,curPanel=null;
+let W=null; // setup wizard state; null until the wizard is opened
+const MAX_SLOTS=84; // largest panel size accepted anywhere in the app
+// Cleans up data from a file or saved draft so every field the app reads has a usable value.
+// Throws if the data is not a BreakerBook record at all.
+function normalizeData(raw){
+  if(!raw||typeof raw!=='object'||Array.isArray(raw))throw new Error('not a BreakerBook file');
+  const d=Object.assign(blank(),raw);
+  for(const k of ['floors','panels','rooms','breakers','devices']){
+    if(d[k]==null)d[k]=[];
+    if(!Array.isArray(d[k]))throw new Error(k+' is not a list');
+  }
+  const str=(v,def='')=>v==null?def:String(v);
+  const num=(v,def)=>{const n=+v;return v!=null&&v!==''&&isFinite(n)?n:def};
+  const int=(v,def)=>Math.round(num(v,def));
+  const obj=a=>a.filter(o=>o&&typeof o==='object'&&!Array.isArray(o));
+  for(const k of ['address','mainShutoff','evCharger','updated'])d[k]=str(d[k]);
+  d.showAddress=d.showAddress!==false;d.setupDone=!!d.setupDone;
+  d.floors=d.floors.filter(f=>f!=null).map(f=>String(f));
+  d.rooms=obj(d.rooms).map(r=>{
+    const o={...r,id:str(r.id)||uid('r'),floor:int(r.floor,0),name:str(r.name,'Room'),w:clamp(num(r.w,10),1,200),h:clamp(num(r.h,10),1,200),x:num(r.x,PX),y:num(r.y,0)};
+    const okPts=Array.isArray(r.pts)&&r.pts.length>=3&&r.pts.every(p=>p&&isFinite(p.x)&&isFinite(p.y));
+    if(okPts){o.pts=r.pts.map(p=>({x:+p.x,y:+p.y}));o.pw=Math.max(...o.pts.map(p=>p.x));o.ph=Math.max(...o.pts.map(p=>p.y))}
+    else{delete o.pts;delete o.pw;delete o.ph}
+    return o;
+  });
+  d.panels=obj(d.panels).map(p=>({...p,id:str(p.id)||uid('p'),name:str(p.name,'Panel'),location:str(p.location),total:clamp(int(p.total,0),0,MAX_SLOTS),floor:int(p.floor,0),room:str(p.room),x:num(p.x,null),y:num(p.y,null),tandem:p.tandem&&typeof p.tandem==='object'?p.tandem:undefined}));
+  d.panels.forEach(p=>{if(p.num!=null){const n=int(p.num,0);if(n>0)p.num=n;else delete p.num}if(p.x==null||p.y==null){p.x=null;p.y=null}});
+  d.breakers=obj(d.breakers).map(b=>{
+    const o={...b,id:str(b.id)||uid('b'),panel:str(b.panel),slot:Math.max(1,int(b.slot,1)),pole:['A','B'].includes(b.pole)?b.pole:'',amps:str(b.amps),type:BT.includes(b.type)?b.type:'Standard',status:b.status==='unused'?'unused':'used',label:str(b.label),funcs:str(b.funcs),feedsPanel:str(b.feedsPanel)};
+    if(b.slot2!=null){const s2=int(b.slot2,0);if(s2>0)o.slot2=s2;else delete o.slot2}
+    return o;
+  });
+  d.devices=obj(d.devices).map(v=>{
+    const o={...v,id:str(v.id)||uid('d'),type:DT.includes(v.type)?v.type:'Other',floor:int(v.floor,0),room:str(v.room),breaker:str(v.breaker),ctrl:str(v.ctrl),gfci:!!v.gfci,critical:!!v.critical,x:num(v.x,null),y:num(v.y,null)};
+    o.name=str(v.name,o.type);
+    if(o.x==null||o.y==null){o.x=null;o.y=null}
+    return o;
+  });
+  return d;
+}
 const $=id=>document.getElementById(id);
 const uid=p=>p+Math.random().toString(36).slice(2,8);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -235,7 +275,10 @@ function freeSpot(boxes,w,h){
   for(let y=0;y+h<=VH;y+=PX)for(let x=PX;x+w<=VW;x+=PX){const b={x,y,w,h};if(!boxes.some(o=>overlaps(b,o)))return{x,y}}
   return null;
 }
-function spotFor(boxes,w,h){let s=freeSpot(boxes,w,h);while(!s){VW+=280;VH+=280;s=freeSpot(boxes,w,h)}return s}
+function spotFor(boxes,w,h){
+  // A shape with no usable size would never fit, and the plan would grow forever.
+  if(!isFinite(w)||!isFinite(h)||w<=0||h<=0)return{x:PX,y:0};
+  let s=freeSpot(boxes,w,h);while(!s){VW+=280;VH+=280;s=freeSpot(boxes,w,h)}return s}
 // The plan grows in 20-foot steps (280 px) when anything reaches its edge.
 function growCanvas(){
   S.devices.forEach(d=>{if(d.room&&d.x!=null)clampDev(d)});
@@ -517,7 +560,7 @@ function renderBrk(){
   $('bview').innerHTML=`
     ${bform?`<div class="bfwrap"><div class="bf">${bformHTML()}</div></div>`:''}
     ${chips}${cols||'<p class="sm">Add a panel to start entering breakers.</p>'}
-    <details class="addp"${S.panels.length?'':' open'}><summary>Add a panel or import from a photo</summary><div class="row"><input id="bpName" placeholder="Panel name (e.g. Main)"><input id="bpTot" type="number" placeholder="Slots"><button data-act="bpAdd">Add panel</button><button data-act="photo">Import from photo</button></div></details>`;
+    <details class="addp"${S.panels.length?'':' open'}><summary>Add a panel or import from a photo</summary><div class="row"><input id="bpName" placeholder="Panel name (e.g. Main)"><input id="bpTot" type="number" min="0" max="84" placeholder="Slots"><button data-act="bpAdd">Add panel</button><button data-act="photo">Import from photo</button></div></details>`;
 }
 // When a room grows into neighbors, push them in the direction of growth ('x' right, 'y' down).
 function snapshotLayout(){return{r:S.rooms.map(r=>[r,r.x,r.y]),d:S.devices.map(d=>[d,d.x,d.y])}}
@@ -567,7 +610,7 @@ function renderSide(){
     ${list(S.panels,p=>`<div class="it ${sel?.id===p.id?'sel':''}" data-act="sel" data-kind="panel" data-id="${p.id}"><span>${esc(p.name)} <span class="sm">${esc(p.location)}</span></span><span class="sm">${avail(p).length} available</span></div>`)}
     <h3>Add panel</h3>
     <div class="row"><input id="pName" placeholder="Panel name (e.g. Main)"></div>
-    <div class="row"><select id="pFloor">${S.floors.map((x,i)=>`<option value="${i}"${i===cur?' selected':''}>${esc(x)}</option>`).join('')}</select><input id="pTot" type="number" placeholder="Total slots"></div>
+    <div class="row"><select id="pFloor">${S.floors.map((x,i)=>`<option value="${i}"${i===cur?' selected':''}>${esc(x)}</option>`).join('')}</select><input id="pTot" type="number" min="0" max="84" placeholder="Total slots"></div>
     <div class="row"><select id="pRoom">${panelRoomOpts(cur)}</select><button data-act="addPanel">Add panel</button></div>
     <h3>Breakers</h3>
     ${list(S.breakers,b=>`<div class="it ${sel?.id===b.id?'sel':''}" data-act="sel" data-kind="breaker" data-id="${b.id}"><span><span class="dot" style="background:${colorOf(b.id)}"></span>${esc(bnum(b))} ${esc(b.label)}</span><span class="sm">${esc(b.amps)}A</span></div>`)}
@@ -1181,7 +1224,9 @@ async function skDetect(){
   const ft=+$('skFt').value;
   if(sk.pts.length<2){skMsg('Tap two points on a wall first.');return}
   if(!ft){skMsg('Enter the wall length in feet.');return}
+  if(!isFinite(ft)||ft<=0){skMsg('Enter a wall length greater than 0 feet.');return}
   const px=Math.hypot(sk.pts[0].x-sk.pts[1].x,sk.pts[0].y-sk.pts[1].y);
+  if(px<10){skMsg('The two points are too close together. Tap both ends of a wall.');return}
   sk.k=ft/px;
   skMsg('Finding rooms…');
   try{
@@ -1337,7 +1382,11 @@ document.addEventListener('click',e=>{
   else if(a==='bfSave'){
     const amps=$('bfAmps').value.trim().replace(/a$/i,'');
     const vals={label:$('bfLabel').value.trim(),amps,type:$('bfType').value,status:$('bfStatus').value,feedsPanel:$('bfFeeds').value};
-    if(bform.id)Object.assign(S.breakers.find(x=>x.id===bform.id),vals);
+    const exist=bform.id&&S.breakers.find(x=>x.id===bform.id);
+    // The breaker or its panel may have been deleted (floor deleted, file opened) while the form was open.
+    if(bform.id&&!exist){setStat('That breaker no longer exists. Nothing was saved.');changed=false}
+    else if(!bform.id&&!S.panels.some(p=>p.id===bform.panel)){setStat('That panel no longer exists. Nothing was saved.');changed=false}
+    else if(exist)Object.assign(exist,vals);
     else if(!S.floors.length)alert('Create your floors first, in the Floors mode.');
     else S.breakers.push({id:uid('b'),panel:bform.panel,slot:bform.slot,slot2:bform.slot2,pole:bform.pole,...vals});
     bform=null;
@@ -1354,7 +1403,7 @@ document.addEventListener('click',e=>{
     else if(!n){setStat('Enter a panel name.');changed=false}
     else{
       const cnt=S.panels.filter(q=>q.floor===cur).length;
-      const p={id:uid('p'),num:nextPanelNum(),name:n,location:'',total:+$('bpTot').value||0,floor:cur,room:'',x:null,y:null};
+      const p={id:uid('p'),num:nextPanelNum(),name:n,location:'',total:clamp(Math.round(+$('bpTot').value||0),0,MAX_SLOTS),floor:cur,room:'',x:null,y:null};
       S.panels.push(p);curPanel=p.id;
     }
   }
@@ -1483,7 +1532,7 @@ document.addEventListener('click',e=>{
       S.panels.forEach(p=>{p.floor=shift(p.floor)});
       S.floors.splice(i,1);
       cur=clamp(cur>i?cur-1:cur===i?0:cur,0,Math.max(0,S.floors.length-1));
-      sel=null;touch();render();
+      sel=null;bform=null;touch();render();
     });
     changed=false;
   }
@@ -1527,7 +1576,7 @@ document.addEventListener('click',e=>{
   }
   else if(a==='addPanel'){
     const n=S.panels.filter(q=>q.floor===cur).length;
-    const p={id:uid('p'),num:nextPanelNum(),name:$('pName').value.trim()||'Panel',total:+$('pTot').value||0,floor:$('pFloor')?+$('pFloor').value:cur,room:$('pRoom')?.value||'',x:null,y:null};
+    const p={id:uid('p'),num:nextPanelNum(),name:$('pName').value.trim()||'Panel',total:clamp(Math.round(+$('pTot').value||0),0,MAX_SLOTS),floor:$('pFloor')?+$('pFloor').value:cur,room:$('pRoom')?.value||'',x:null,y:null};
     S.panels.push(p);placeDev(p);sel={kind:'panel',id:p.id};curPanel=p.id;
   }
   else if(a==='addBreaker'){
@@ -1572,8 +1621,17 @@ document.addEventListener('change',e=>{
   if(e.target.id==='fIn'){
     const f=e.target.files[0];if(!f)return;
     f.text().then(txt=>{
-      try{S=Object.assign(blank(),JSON.parse(txt));VW=960;VH=640;undoStack=[];lastSnap=null;cur=0;sel=null;currentName=f.name.replace(/\.json$/i,'');dirty=false;setStat('Opened '+f.name);render()}
-      catch(err){setStat('That file could not be read as a BreakerBook file.')}
+      // Check the file fully before replacing the current home. If anything fails, the current home stays as it was.
+      let next;
+      try{next=normalizeData(JSON.parse(txt))}
+      catch(err){setStat('That file could not be read as a BreakerBook file. Nothing was changed.');return}
+      const prev={S,VW,VH,undoStack,lastSnap,cur,sel,bform,currentName,dirty};
+      try{S=next;VW=960;VH=640;undoStack=[];lastSnap=null;cur=0;sel=null;bform=null;currentName=f.name.replace(/\.json$/i,'');dirty=false;render();setStat('Opened '+f.name)}
+      catch(err){
+        ({S,VW,VH,undoStack,lastSnap,cur,sel,bform,currentName,dirty}=prev);
+        try{render()}catch(e){}
+        setStat('That file could not be opened: '+((err&&err.message)||err)+'. Nothing was changed.');
+      }
     });
     e.target.value='';return;
   }
@@ -1583,6 +1641,8 @@ document.addEventListener('change',e=>{
   let v=t.type==='checkbox'?t.checked:t.value;
   if(['w','h','x','y','total','slot','floor'].includes(f))v=+v||0;
   if(f==='w'||f==='h')v=clamp(+v||1,1,200);
+  if(f==='total'){const t=clamp(Math.round(v),0,MAX_SLOTS);if(t!==v)setStat(`A panel can have 0 to ${MAX_SLOTS} slots.`);v=t}
+  if(f==='slot')v=Math.max(1,Math.round(v));
   if(f==='floor')v=clamp(v,0,Math.max(0,S.floors.length-1));
   const old=o[f];
   o[f]=v;
@@ -1643,10 +1703,13 @@ const endDrag=()=>{
 svg.addEventListener('pointerup',endDrag);
 svg.addEventListener('pointercancel',endDrag);
 
-try{const d=localStorage.getItem('breakerbook-draft');if(d){S=Object.assign(blank(),JSON.parse(d));dirty=true;setStat('Restored unsaved work.')}}catch(e){}
+let draftText=null;
+// If the saved draft cannot be used, a copy is kept under another name and the app starts empty instead of failing.
+const setAsideDraft=()=>{try{if(draftText)localStorage.setItem('breakerbook-draft-unreadable',draftText)}catch(e){}S=blank();dirty=false;setStat('Your unsaved work could not be restored. A copy was kept in this browser.')};
+try{draftText=localStorage.getItem('breakerbook-draft');if(draftText){S=normalizeData(JSON.parse(draftText));dirty=true;setStat('Restored unsaved work.')}}catch(e){setAsideDraft()}
 $('brkWords').innerHTML=BRK_WORDS.map(n=>`<option value="${titleCase(n)}">`).join('');
 $('roomNames').innerHTML=ROOM_NAME_LIST.map(n=>`<option value="${n}">`).join('');
-render();
+try{render()}catch(e){setAsideDraft();lastSnap=null;render()}
 (function(){
   const sp=$('splash');
   const go=()=>{sp.classList.add('out');setTimeout(()=>sp.remove(),600)};
