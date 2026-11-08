@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>BreakerBook v55</title>
+<title>BreakerBook v57</title>
 
 <style>
 :root{color-scheme:light dark;--bg:#f0f3f7;--pn:#fff;--bgi:#f4f6f9;--fg:#1b2733;--mut:#64748b;--ln:#dfe5ec;--ac:#0b7fc0;--act:#fff;--ac2:#e3f1fb;--wall:#8795a5;--rf:rgba(11,127,192,.05);--rfs:rgba(11,127,192,.13);--sh:0 1px 2px rgba(16,24,40,.05),0 2px 10px rgba(16,24,40,.05);--r:14px}
@@ -162,7 +162,7 @@ header{position:sticky;top:0;z-index:4}
 #phdlg #skc.fit{display:block;margin:0 auto;width:auto;max-width:100%;max-height:calc(100vh - 280px);min-height:140px}
 .skrev .pgr{max-height:calc(100vh - 230px)}.skrev .skrow{padding:5px 0}
 </style></head><body>
-<header><div class="brand"><span class="logo"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M13.2 2 4.5 13.4h5.6L9 22l9.5-12h-5.8L13.2 2Z"/></svg></span><b>BreakerBook</b><span class="tag">Map your home's electrical system</span><span class="ver">v55</span></div>
+<header><div class="brand"><span class="logo"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M13.2 2 4.5 13.4h5.6L9 22l9.5-12h-5.8L13.2 2Z"/></svg></span><b>BreakerBook</b><span class="tag">Map your home's electrical system</span><span class="ver">v57</span></div>
 <div class="acts"><button data-act="open">Open file</button><button data-act="printOpts">Print</button><button data-act="undo">Undo</button><button data-act="new">New</button><button data-act="save">Save file</button></div>
 <nav class="seg" id="modes"></nav>
 <input type="file" id="fIn" accept=".json,application/json" hidden><span id="stat"></span></header>
@@ -198,7 +198,7 @@ header{position:sticky;top:0;z-index:4}
 <input type="file" id="phFile" accept="image/*" hidden>
 <input type="file" id="skFile" accept="image/*" hidden>
 <datalist id="roomNames"></datalist><datalist id="brkWords"></datalist>
-<div id="splash"><div class="spl-logo"><svg viewBox="0 0 24 24" width="52" height="52" fill="currentColor"><path d="M13.2 2 4.5 13.4h5.6L9 22l9.5-12h-5.8L13.2 2Z"/></svg></div><h1>BreakerBook</h1><p>Map your home's electrical system</p><span class="spl-ver">Version 55</span><div class="spl-hint">Tap anywhere to begin</div></div>
+<div id="splash"><div class="spl-logo"><svg viewBox="0 0 24 24" width="52" height="52" fill="currentColor"><path d="M13.2 2 4.5 13.4h5.6L9 22l9.5-12h-5.8L13.2 2Z"/></svg></div><h1>BreakerBook</h1><p>Map your home's electrical system</p><span class="spl-ver">Version 57</span><div class="spl-hint">Tap anywhere to begin</div></div>
 <div id="print"></div>
 <script>
 const DT=['Outlet','Switch','Light','Fan','Fixture','Other'];
@@ -597,7 +597,7 @@ let pendingYes=null;
 function askConfirm(msg,fn){pendingYes=fn;$('cmsg').textContent=msg;$('cdlg').classList.add('open')}
 // Outside libraries load only when needed (printing, for the QR code).
 function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=()=>rej(new Error('load failed'));document.head.appendChild(s)})}
-// Photo import (v55): two photo types. The person taps the four corners of the area, the app straightens it,
+// Photo import (v56): two photo types. The person taps the four corners of the area, the app straightens it,
 // cuts it into rows, and suggests amps (panel photo) or labels (written list). Every row is shown beside its crop to confirm.
 let phPending=null,phCtx={done:{panel:false,list:false},panel:null,kind:'panel',wiz:false,img:null,src:null,pts:[],cols:2,numbering:'pairs',slots:24,note:'',rect:null,rows:[]};
 const AMP_WORDS=['15','20','25','30','35','40','45','50','60','70','80','90','100','110','125','150','175','200'];
@@ -660,7 +660,7 @@ function estimateRows(g,W,H,cols){
   for(let T=bl*0.9;T<=bl*1.1;T+=bl*0.004)for(let ph=0;ph<T;ph+=2){let t=0,n=0;for(let y=ph;y<H;y+=T){t+=sm[Math.round(y)];n++}t/=n;if(t>bS){bS=t;bT=T;bP=ph}}
   if(bP>0.55*bT)bP-=bT;
   const R=Math.round((H-bP)/bT);
-  return R>=3&&R<=24?{R,ph:bP}:null;
+  return R>=3&&R<=24?{R,ph:bP,T:bT}:null;
 }
 function slotFor(r,col,R,cols,numbering){
   if(cols===1)return r+1;
@@ -762,21 +762,71 @@ function readListRow(g,w,h){
   const known=out.filter(x=>x!=='?');
   return {blank:false,text:known.length?out.join(' ').replace(/(\s\?)+$/,'').trim():'',sure:allSure&&known.length===out.length,chips};
 }
+// Rows are not all the same height in a photo (perspective), so the row boundaries are placed on the real gaps
+// between breakers. The left column (all single breakers) gives the cleanest gaps; both columns share them.
+function trackRows(r,cols,ph,T,maxR,estR){
+  const H=r.H,W=r.W;
+  const even=R=>{const rh=(H-ph)/R,b=[];for(let k=0;k<=R;k++)b.push(Math.max(0,Math.min(H-1,Math.round(ph+k*rh))));return {R,bnd:Array.from({length:cols},()=>b),even:true}};
+  if(maxR)return even(maxR);
+  const x1=cols===2?Math.floor(W/2):W,pr=new Float32Array(H);
+  for(let y=3;y<H-3;y++){let s=0;for(let x=0;x<x1;x++)s+=Math.abs(r.g[(y+3)*W+x]-r.g[(y-3)*W+x]);pr[y]=s/x1}
+  const sm=new Float32Array(H);
+  for(let y=0;y<H;y++){let t=0,n=0;for(let d=-3;d<=3;d++){const yy=y+d;if(yy>=0&&yy<H){t+=pr[yy];n++}}sm[y]=t/n}
+  const srt=Array.from(sm).sort((a,b)=>a-b),thr=srt[Math.floor(H*.9)]*0.4;
+  const order=Array.from({length:H},(_,i)=>i).sort((a,b)=>sm[b]-sm[a]),taken=new Uint8Array(H),gap=Math.round(0.6*T),pk=[];
+  for(const y of order){if(sm[y]<thr)break;if(taken[y])continue;pk.push(y);for(let d=-gap;d<=gap;d++)if(y+d>=0&&y+d<H)taken[y+d]=1}
+  pk.sort((a,b)=>a-b);
+  if(pk.length<4)return even(estR||Math.max(3,Math.round(H/T)));
+  const iv=pk.slice(1).map((y,i)=>y-pk[i]),sv=iv.slice().sort((a,b)=>a-b),med=sv[sv.length>>1];
+  // real gaps come at an even rhythm; two edges per row (handle edges) make an uneven one
+  const tr=sv.slice(Math.floor(sv.length*.1),Math.ceil(sv.length*.9)),mean=tr.reduce((a,b)=>a+b,0)/tr.length;
+  const cv=Math.sqrt(tr.reduce((a,b)=>a+(b-mean)*(b-mean),0)/tr.length)/mean;
+  const b=pk.slice();
+  if(b[0]>0.6*med)b.unshift(0);
+  if(H-1-b[b.length-1]>0.6*med)b.push(H-1);
+  const out=[b[0]];
+  for(let i=1;i<b.length;i++){
+    const d=b[i]-b[i-1],n=Math.max(1,Math.round(d/med));
+    for(let k=1;k<n;k++)out.push(Math.round(b[i-1]+d*k/n));
+    out.push(b[i]);
+  }
+  const R=out.length-1;
+  if(cv>0.1||(estR&&Math.abs(R-estR)>1))return even(estR||R);
+  return {R,bnd:Array.from({length:cols},()=>out),cv};
+}
+function slotForPh(i,col,R){
+  if(phCtx.side){
+    const half=Math.ceil(phCtx.slots/2),right=phCtx.side==='right'?1:0;
+    return phCtx.numbering==='cols'?right*half+i+1:2*i+1+right;
+  }
+  return slotFor(i,col,R,phCtx.cols,phCtx.numbering);
+}
 function phBuildRows(){
-  const r=phCtx.rect,cols=phCtx.cols,R=cols===2?Math.ceil(phCtx.slots/2):phCtx.slots;
-  const rows=[],cw=Math.floor(r.W/cols),ph=phCtx.rowPh||0,rh=(r.H-ph)/R;
-  for(let col=0;col<cols;col++)for(let i=0;i<R;i++){
-    const slot=slotFor(i,col,R,cols,phCtx.numbering);
-    if(slot>phCtx.slots)continue;
-    const x0=col*cw,y0=Math.round(ph+i*rh),h=Math.max(8,Math.round(rh)),w=cw;
-    const g=new Float32Array(w*h);
+  const r=phCtx.rect,cols=phCtx.cols,side=phCtx.side;
+  const tr=trackRows(r,cols,phCtx.rowPh||0,phCtx.rowT||r.H/12,phCtx.maxR,phCtx.kind==='list'?null:phCtx.estR);
+  const R=Math.max(1,tr.R);
+  if(side){if(2*R>phCtx.slots&&!phCtx.maxR)phCtx.slots=2*R}
+  else if(!phCtx.maxR||cols*R<phCtx.slots)phCtx.slots=cols*R;
+  const rows=[],cw=Math.floor(r.W/cols),cellsBy=[],subsBy=[];
+  const cellOf=(col,i)=>{
+    const x0=col*cw,y0=tr.bnd[col][i],h=Math.max(8,tr.bnd[col][i+1]-y0),w=cw,g=new Float32Array(w*h);
     for(let y=0;y<h;y++)for(let x=0;x<w;x++)g[y*w+x]=r.g[Math.max(0,Math.min(r.H-1,y0+y))*r.W+x0+x];
+    return {g,w,h,x0,y0};
+  };
+  for(let col=0;col<cols;col++){
+    cellsBy[col]=[];for(let i=0;i<R;i++)cellsBy[col][i]=cellOf(col,i);
+    subsBy[col]=[];
+    if(phCtx.kind==='panel'){try{subsBy[col]=ampSubs(cellsBy[col])}catch(e){subsBy[col]=[]}}
+  }
+  for(let col=0;col<cols;col++)for(let i=0;i<R;i++){
+    const slot=slotForPh(i,col,R);
+    if(slot>phCtx.slots)continue;
+    const {g,w,h,x0,y0}=cellsBy[col][i],sub=subsBy[col][i]||null;
     let read=null;
-    try{read=phCtx.kind==='panel'?readAmpsTier(g,w,h):readListRow(g,w,h)}catch(e){read=null}
+    try{read=phCtx.kind==='panel'?phReadAmp(cellsBy[col][i],sub):readListRow(g,w,h)}catch(e){read=null}
     const cv=document.createElement('canvas'),k=Math.min(1,300/w);
     let crop2='';
     if(phCtx.kind==='list'){
-      // taller crop: handwriting often spills over the ruled lines
       const pad=Math.round(h*.3),sy=Math.max(0,y0-pad),sh=Math.min(r.H,y0+h+Math.round(h*.2))-sy;
       cv.width=Math.round(w*k);cv.height=Math.round(sh*k);
       cv.getContext('2d').drawImage(r.cv,x0,sy,w,sh,0,0,cv.width,cv.height);
@@ -785,12 +835,11 @@ function phBuildRows(){
       cv.getContext('2d').drawImage(r.cv,x0,y0,w,h,0,0,cv.width,cv.height);
       try{crop2=grayToUrl(enhanceGray(g,w,h),w,h,cv.width)}catch(e){}
     }
-    rows.push({slot,col,i,read,crop:cv.toDataURL('image/jpeg',0.75),crop2,next:slotFor(i+1,col,R,cols,phCtx.numbering),hasNext:i+1<R});
+    rows.push({slot,col,i,read,sub,crop:cv.toDataURL('image/jpeg',0.75),crop2,next:slotForPh(i+1,col,R),hasNext:i+1<R});
   }
   rows.sort((a,b)=>a.slot-b.slot);
-  if(phCtx.kind==='panel'){
-    const ties=detectTies(r,cols,ph,rh,R);
-    // a breaker spans exactly two rows, so a row already joined to the one above cannot start another joined pair
+  if(phCtx.kind==='panel'&&cols===2){
+    const ties=detectTies(r,cols,tr.bnd);
     for(let c=0;c<cols;c++){
       let prev=false;
       rows.filter(x=>x.col===c).sort((a,b)=>a.i-b.i).forEach(x=>{
@@ -805,11 +854,17 @@ function phBuildRows(){
 function phProcess(){
   const pts=phCtx.pts;if(pts.length<4)return;
   phCtx.rect=rectify(phCtx.src,pts);
-  const est=estimateRows(phCtx.rect.g,phCtx.rect.W,phCtx.rect.H,phCtx.cols),R=est&&est.R;
-  phCtx.rowPh=est?est.ph:0;
-  if(R){phCtx.slots=phCtx.cols===2?R*2:R;phCtx.note=`Counted ${phCtx.slots} slots in the photo. Change the number if that is wrong.`}
-  else{phCtx.slots=phCtx.panel&&phCtx.panel.total?phCtx.panel.total:24;phCtx.note=`I could not count the slots from the photo, so I used ${phCtx.slots}. How many slots does this panel have? Change the number if needed.`}
-  phBuildRows();phStage('rows');
+  const r=phCtx.rect,est=estimateRows(r.g,r.W,r.H,phCtx.cols);
+  phCtx.maxR=null;phCtx.estR=est?est.R:null;
+  if(est){phCtx.rowPh=est.ph;phCtx.rowT=est.T}
+  else{phCtx.rowPh=0;phCtx.rowT=r.H/12;phCtx.maxR=12}
+  if(phCtx.side&&!est)phCtx.maxR=null;
+  phBuildRows();
+  if(phCtx.side)phCtx.note=`Found ${phCtx.rows.length} breakers in this ${phCtx.side} column. Tick 2-pole on the first row of any joined pair. Change the slot count if the panel has more or fewer slots.`;
+  else if(est)phCtx.note=`Counted ${phCtx.slots} slots in the photo. Change the number if that is wrong.`;
+  else if(phCtx.side){phCtx.note=`I could not count the rows in this column, so I used 12. Change the slot count if needed.`}
+  else{phCtx.slots=phCtx.cols===2?24:12;phCtx.note=`I could not count the slots from the photo, so I used ${phCtx.slots}. How many slots does this panel have? Change the number if needed.`;phBuildRows()}
+  phStage('rows');
 }
 function phStage(stage){
   const box=$('phbox');
@@ -817,27 +872,28 @@ function phStage(stage){
   const kindName=phCtx.kind==='panel'?'panel photo (amps)':'written list (labels)';
   if(stage==='pick'){
     box.innerHTML=`<h3 style="margin:0">Import breakers from a photo</h3>
-      <p class="sm">The photo stays on this device and is not uploaded. Use either photo or both: the panel photo gives the amps and the written list gives the labels. They are combined by slot number.${phCtx.msg?` <b>${esc(phCtx.msg)}</b>`:''}</p>
+      <p class="sm">The photo stays on this device and is not uploaded. Use any of the photos: the panel photo (or a close-up of each column) gives the amps and the written list gives the labels. They are combined by slot number.${phCtx.msg?` <b>${esc(phCtx.msg)}</b>`:''}</p>
       ${phCtx.panel&&phCtx.wiz?`<p class="sm"><b>${esc(phCtx.panel.name)}</b></p>`:`<select id="phPanel">${S.panels.map(p=>`<option value="${p.id}"${phCtx.panel&&phCtx.panel.id===p.id?' selected':''}>${esc(p.name)}</option>`).join('')}</select>`}
       <button class="opt" data-act="phType" data-v="panel"><b>${phCtx.done.panel?'&#10003; ':''}Photo of the panel</b><span>Door open. Reads the amps printed on the breaker handles.</span></button>
+      <button class="opt" data-act="phType" data-v="closeup"><b>${phCtx.done.panel?'&#10003; ':''}Close-up of one column (best for amps)</b><span>Move closer and photograph one column of handles at a time. Reads the amps most reliably, and learns from the values you confirm.</span></button>
       <button class="opt" data-act="phType" data-v="list"><b>${phCtx.done.list?'&#10003; ':''}Photo of the written list</b><span>Usually inside the door. Reads the labels beside each number.</span></button>
       <div class="row"><button data-act="phCancel"${phCtx.done.panel||phCtx.done.list?' class="pri"':''}>${phCtx.done.panel||phCtx.done.list?'Done':'Cancel'}</button></div>`;
   }else if(stage==='corners'){
-    const tip=phCtx.kind==='panel'
+    const tip=phCtx.side?'Tap the four corners around the breakers in this column: top-left, top-right, bottom-right, bottom-left. Start at the top of the first row and end at the bottom of the last row. Include the amp numbers.':phCtx.kind==='panel'
       ?'Tap the four corners around all the breaker handles: top-left, top-right, bottom-right, bottom-left. Start at the top of the first row and end at the bottom of the last row. Include both columns.'
       :'Tap the four corners around the list rows: top-left, top-right, bottom-right, bottom-left. Start at the first row (not the title) and end at the bottom of the last row. Include both columns.';
     const n=phCtx.pts.length;
     box.innerHTML=`<h3 style="margin:0">Mark the area</h3><p class="sm">${tip} Taps: ${n} of 4.</p>
       <canvas id="phc" style="display:block;max-width:100%;max-height:56vh;margin:0 auto;touch-action:none;border:1px solid var(--ln);border-radius:10px"></canvas>
-      <div class="row"><label class="sm" style="flex:1">Columns<select id="phCols"><option value="2"${phCtx.cols===2?' selected':''}>Two columns</option><option value="1"${phCtx.cols===1?' selected':''}>One column</option></select></label></div>
+      ${phCtx.closeup?`<div class="row"><label class="sm" style="flex:1">Which column is this?<select id="phSide"><option value="left"${phCtx.side==='left'?' selected':''}>Left column</option><option value="right"${phCtx.side==='right'?' selected':''}>Right column</option></select></label></div>`:`<div class="row"><label class="sm" style="flex:1">Columns<select id="phCols"><option value="2"${phCtx.cols===2?' selected':''}>Two columns</option><option value="1"${phCtx.cols===1?' selected':''}>One column</option></select></label></div>`}
       <div class="row"><button data-act="phRead"${n<4?' disabled':''}>Read the photo</button><button data-act="phReset">Reset taps</button><button data-act="phCancel">Cancel</button></div>`;
     drawPhc();
   }else if(stage==='rows'){
     const isP=phCtx.kind==='panel';
     box.innerHTML=`<h3 style="margin:0">Check each row</h3>
-      <p class="sm">${esc(phCtx.note)} ${isP?'Amps in the box were read confidently; the buttons are other likely values. Check each against the crop, and leave a row blank if it has no breaker.':'I cut out each row beside its number, but I cannot reliably read handwriting on a list yet, so type each label. Printed text may be suggested, and rows that look empty are marked.'}</p>
+      <p class="sm">${esc(phCtx.note)} ${isP?'Amps in the box were read confidently; the buttons are other likely values. Check each against the crop, and leave a row blank if it has no breaker. Values you confirm teach the reader (kept on this device).':'I cut out each row beside its number, but I cannot reliably read handwriting on a list yet, so type each label. Printed text may be suggested, and rows that look empty are marked.'}</p>
       <div class="row"><label class="sm" style="flex:1">Slots<input id="phSlots" type="number" min="2" max="84" value="${phCtx.slots}"></label>
-      ${phCtx.cols===2?`<label class="sm" style="flex:2">Numbering<select id="phNum"><option value="pairs"${phCtx.numbering==='pairs'?' selected':''}>Left and right pairs (1 and 2, then 3 and 4)</option><option value="cols"${phCtx.numbering==='cols'?' selected':''}>Down the left, then the right (1-${Math.ceil(phCtx.slots/2)}, then ${Math.ceil(phCtx.slots/2)+1}-${phCtx.slots})</option></select></label>`:''}</div>
+      ${phCtx.cols===2||phCtx.side?`<label class="sm" style="flex:2">Numbering<select id="phNum"><option value="pairs"${phCtx.numbering==='pairs'?' selected':''}>Left and right pairs (1 and 2, then 3 and 4)</option><option value="cols"${phCtx.numbering==='cols'?' selected':''}>Down the left, then the right (1-${Math.ceil(phCtx.slots/2)}, then ${Math.ceil(phCtx.slots/2)+1}-${phCtx.slots})</option></select></label>`:''}</div>
       <div class="phrows">${phCtx.rows.map((r,i)=>{
         const rd=r.read;
         if(isP){
@@ -886,7 +942,7 @@ function phTap(e){
 }
 function openPhoto(panelId,wiz){
   if(!S.panels.length){alert('Add a panel first.');return}
-  phCtx={done:{panel:false,list:false},panel:S.panels.find(p=>p.id===panelId)||null,kind:'panel',wiz:!!wiz,img:null,src:null,pts:[],cols:2,numbering:'pairs',slots:24,note:'',rect:null,rows:[]};
+  phCtx={done:{panel:false,list:false},closeup:false,side:null,panel:S.panels.find(p=>p.id===panelId)||null,kind:'panel',wiz:!!wiz,img:null,src:null,pts:[],cols:2,numbering:'pairs',slots:24,note:'',rect:null,rows:[]};
   if(!phCtx.panel&&curPanel)phCtx.panel=S.panels.find(p=>p.id===curPanel)||null;
   phStage('pick');$('phdlg').classList.add('open');
 }
@@ -896,7 +952,7 @@ function phLoad(f){
     const k=Math.min(1,1800/Math.max(img.width,img.height)),cv=document.createElement('canvas');
     cv.width=Math.round(img.width*k);cv.height=Math.round(img.height*k);
     cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
-    phCtx.src=cv;phCtx.pts=[];phCtx.cols=2;phCtx.numbering='pairs';phStage('corners');
+    phCtx.src=cv;phCtx.pts=[];phCtx.cols=phCtx.closeup?1:2;phCtx.numbering='pairs';phStage('corners');
   };
   img.src=URL.createObjectURL(f);
 }
@@ -913,7 +969,8 @@ function updateFromPhoto(ex,b){
 function finishPhoto(added,updated){
   phPending=null;phCtx.done[phCtx.kind]=true;
   phCtx.msg=`Added ${added}${updated?`, updated ${updated}`:''}. Import the other photo, or tap Done.`;
-  phCtx.pts=[];phStage('pick');
+  phCtx.pts=[];if(phCtx.closeup&&phCtx.side)phCtx.side=phCtx.side==='left'?'right':'left';
+  phStage('pick');
 }
 function applyGuide(){
   const p=phCtx.panel;if(!p)return;
@@ -922,6 +979,7 @@ function applyGuide(){
     if(used.has(r.slot))return;
     if(isP){
       let amps=(document.querySelector(`[data-pa="${i}"]`)?.value||'').trim().replace(/a$/i,'');
+      if(amps&&r.sub){try{ampLearn(r.sub.g,r.sub.w,r.sub.h,amps)}catch(e){}}
       const two=document.querySelector(`[data-p2="${i}"]`)?.checked&&r.hasNext;
       if(!amps&&two&&r.nextIdx>=0)amps=(document.querySelector(`[data-pa="${r.nextIdx}"]`)?.value||'').trim().replace(/a$/i,'');
       if(!amps)return;
@@ -998,18 +1056,19 @@ function grayToUrl(g,w,h,outW){
   return cv.toDataURL('image/jpeg',0.75);
 }
 // A two-pole breaker has one handle bar that crosses the gap between two rows. Looks for a narrow bright bar on the handle side.
-function detectTies(r,cols,ph,rh,n){
+function detectTies(r,cols,bnd){
   const out=[];
   if(cols!==2)return out;
   const cw=Math.floor(r.W/2);
   for(let col=0;col<2;col++){
     out[col]=[];
-    for(let k=1;k<n;k++){
-      const y=Math.round(ph+k*rh);let tie=false;
+    const b=bnd[col];
+    for(let k=1;k<b.length-1;k++){
+      const y=b[k];let tie=false;
       if(y>4&&y<r.H-5){
         const e=new Float32Array(cw);
         for(let x=0;x<cw;x++){let t=0;for(let dy=-3;dy<=3;dy++)t+=r.g[(y+dy)*r.W+col*cw+x];e[x]=t/7}
-        const med=[...e].sort((a,b)=>a-b)[cw>>1],lo=col===0?0.4*cw:0,hi=col===0?cw:0.6*cw;
+        const med=Array.from(e).sort((a,b)=>a-b)[cw>>1],lo=col===0?0.4*cw:0,hi=col===0?cw:0.6*cw;
         let cur=0,x0=0;
         for(let x=0;x<=cw;x++){
           if(x<cw&&e[x]>med+26){if(!cur)x0=x;cur++}
@@ -1041,6 +1100,163 @@ function phJoin(i,on){
   el.classList.toggle('joined',on);
   const note=el.querySelector('.jn');if(note)note.style.display=on?'block':'none';
 }
+
+const AMP_SEED={"0":[{"a":0.7,"s":"24688742456677536654566587423677874235779742257687423566775346656666665346787642"},{"a":0.8,"s":"56888631577776536765566467634676675335666763246656643566356556652467776413588753"},{"a":0.67,"s":"45787531667776538765676597534687974236888742368977533689566557883567777624688865"},{"a":0.64,"s":"24688753356677655665467777532578875224798752247877633578566556763566665423577642"},{"a":0.64,"s":"12467665135677773566568856643579676324797763247988643578677556764677765435788642"},{"a":0.73,"s":"12578864246778764676678857644688676446886764467777655775777677535787763246776421"},{"a":0.54,"s":"99887544888875446788765434677655124544330122211101110000122100003432000055420000"},{"a":0.43,"s":"67899864788888769875678898644689985335899853358988644689677657894577788724689876"},{"a":0.76,"s":"25677631456556436653455487422565874224667742246766423566455446663466665413677643"},{"a":0.65,"s":"34787642456666547653456687422478873114788731147887422467765445664566665434788742"},{"a":0.73,"s":"24677642346555534553345555421356654113675542146756532466466545543577765324788742"},{"a":0.87,"s":"35654554466656666666567676655665765666537666764276677543766766536656665344446642"},{"a":0.87,"s":"32233322333344433333455411123554000134430001243200012332000123210001232100012210"}],"1":[{"a":0.45,"s":"11246764234678753457887523457876112358880012578800025788000257870012577600125776"},{"a":0.48,"s":"11246764234678753467898734568986112478750013687600136887001368980013689800136888"},{"a":0.41,"s":"11235788234678884567899934578999123589990124799900247999002479990024788800146888"},{"a":0.48,"s":"11246876234678873457898623468875112478750014787500147875001478740025886400258864"},{"a":0.72,"s":"13555555246654332466421134653100345521002344210012443210123442100234311002332100"}],"2":[{"a":0.7,"s":"24688864456777756654567755433676233346651245654334665421567643217876554399887765"},{"a":0.71,"s":"35787631567887536777776555556765233466541245654234665421567654326787765467888875"},{"a":0.71,"s":"56887531677666437654576454335664223456531245653134665321467653325676665545667877"},{"a":0.67,"s":"24788876357777774665568834434578223356761245665434666532567754337887766688988888"},{"a":0.68,"s":"12468886135678882465678923444688123356661245554334665421577754228887654399887754"},{"a":0.71,"s":"02467865135677772456678823555677134566542356653245776532678876536677875444567753"},{"a":0.89,"s":"45567888346788881367777713565444124432110122100000121000001221110123333201244444"},{"a":0.5,"s":"67887421788776427666775354446753223566421356653135676421678764328988765499987665"},{"a":0.41,"s":"12444433123444321233442112234421223443213444432145554321555554324455543223445432"},{"a":0.91,"s":"00012455001234431123432123443210234322113332233233334432333444211234431002343100"}],"3":[{"a":0.69,"s":"24677653246555552343356712233577222246764322357755423567566445663566555425665532"}],"5":[{"a":0.67,"s":"35888865467766535776543267765543566566655544467855323678665446775666665445666542"},{"a":0.7,"s":"46898865468776535776543267765543567666664554568844323689555446785676677646888764"},{"a":0.68,"s":"47899875578877546787654267876532677666536654577676435777765567766667776445688753"},{"a":0.64,"s":"25799887357887764687665457877653567667655554578755434688665457776777776456787642"},{"a":0.83,"s":"44321000555321005554210034321100332100003432100034532211245543331355434312443233"},{"a":0.71,"s":"36788753467665425665432167755421666655436554456555323566554335655565565435777754"},{"a":0.71,"s":"36788753467765425676542156766431456566534443466554323577555446664565554334565431"}]};
+// ---- v57: find the amp column automatically, read it with digits learned from real breakers ----
+// Amp numbers sit in one vertical strip on every brand. The strip is found from rows that agree, then read with
+// digit shapes taken from labeled photos (built in) plus every value you confirm (kept on this device).
+const AMP_RARE=new Set(['25','35','45','70','80','90','110','125','150','175','200']);
+let AMP_BANK={},AMP_LEARNED={};
+function ampEnc(e){return {a:+e.aspect.toFixed(2),s:Array.from(e.g,v=>Math.max(0,Math.min(9,Math.round(v*9)))).join('')}}
+function ampDec(o){return {aspect:o.a,g:Float32Array.from(o.s,c=>(+c)/9)}}
+function ampBankInit(){
+  AMP_BANK={};
+  const add=src=>{for(const ch in src){(AMP_BANK[ch]=AMP_BANK[ch]||[]).push(...src[ch].map(ampDec))}};
+  try{add(AMP_SEED)}catch(e){}
+  try{AMP_LEARNED=JSON.parse(localStorage.getItem('bb_ampbank57')||'{}');add(AMP_LEARNED)}catch(e){AMP_LEARNED={}}
+}
+function ampMarks(g,w,h){
+  const out=[],S=Math.min(w,h);
+  for(const pol of [0,1]){
+    const gg=pol?g.map(v=>255-v):g;
+    const dark=localDarkMask(gg,w,h,Math.max(6,Math.round(S*.25)),22);
+    const cs=markComponents(dark,w,h).filter(c=>{
+      const hi=Math.max(c.w,c.h),lo=Math.min(c.w,c.h),fill=c.pix.length/(c.w*c.h);
+      return hi>=0.09*h&&hi<=0.5*h&&lo>=0.05*h&&c.pix.length>=15&&fill>=0.15&&fill<=0.9&&hi<=2.2*lo+2&&c.x0>0&&c.y0>0&&c.x1<w-1&&c.y1<h-1;
+    });
+    for(const c of cs){
+      const sz=Math.max(c.w,c.h);
+      const nb=cs.some(d=>d!==c&&Math.abs(Math.max(d.w,d.h)-sz)<=0.35*sz&&((Math.abs((d.y0+d.y1)/2-(c.y0+c.y1)/2)<=0.4*sz&&Math.abs((d.x0+d.x1)/2-(c.x0+c.x1)/2)<=1.4*sz)||(Math.abs((d.x0+d.x1)/2-(c.x0+c.x1)/2)<=0.4*sz&&Math.abs((d.y0+d.y1)/2-(c.y0+c.y1)/2)<=1.4*sz)));
+      if(nb)out.push({x:(c.x0+c.x1)/2,y:(c.y0+c.y1)/2,x0:c.x0,x1:c.x1,y0:c.y0,y1:c.y1,sz,pol});
+    }
+  }
+  return out;
+}
+function ampColumnCandidates(cells,marksOut){
+  const w=cells[0].w,prof=new Float32Array(w),all=[];
+  cells.forEach((c,i)=>{
+    const ms=ampMarks(c.g,c.w,c.h);marksOut[i]=ms;ms.forEach(m=>all.push(m.sz));
+    const rp=new Float32Array(w);
+    for(const m of ms){const s=Math.max(3,0.8*m.sz);for(let x=Math.max(0,Math.floor(m.x-2*s));x<Math.min(w,m.x+2*s);x++){const v=Math.exp(-Math.pow((x-m.x)/s,2));if(v>rp[x])rp[x]=v}}
+    for(let x=0;x<w;x++)prof[x]+=rp[x];
+  });
+  all.sort((a,b)=>a-b);const msz=all[all.length>>1]||0.3*cells[0].h;
+  const peaks=[],p2=Float32Array.from(prof);
+  for(let k=0;k<3;k++){
+    let bx=-1,bv=0;for(let x=0;x<w;x++)if(p2[x]>bv){bv=p2[x];bx=x}
+    if(bx<0||bv<Math.max(1.5,0.2*cells.length))break;
+    peaks.push({cx:bx,support:bv});
+    for(let x=Math.max(0,Math.round(bx-2.5*msz));x<Math.min(w,bx+2.5*msz);x++)p2[x]=0;
+  }
+  return peaks.map(pk=>{const half=Math.max(1.3*msz,6);return {x0:Math.max(0,Math.round(pk.cx-half)),x1:Math.min(w,Math.round(pk.cx+half)),support:pk.support,cx:pk.cx}});
+}
+function cropGray(g,w,x0,y0,x1,y1){const cw=x1-x0,ch=y1-y0,o=new Float32Array(cw*ch);for(let y=0;y<ch;y++)for(let x=0;x<cw;x++)o[y*cw+x]=g[(y0+y)*w+x0+x];return o}
+function ampSubOf(c,ms,cx){
+  // group the marks that touch each other; the amp number is the group closest to the strip centre
+  const n=ms.length,par=ms.map((_,i)=>i),f=i=>par[i]===i?i:(par[i]=f(par[i]));
+  for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){
+    if(ms[i].pol!==ms[j].pol)continue;
+    const sz=Math.max(ms[i].sz,ms[j].sz);
+    if(Math.abs(ms[i].x-ms[j].x)<=1.5*sz&&Math.abs(ms[i].y-ms[j].y)<=1.5*sz&&Math.min(ms[i].sz,ms[j].sz)>=0.6*sz)par[f(i)]=f(j);
+  }
+  const cl={};ms.forEach((m,i)=>{(cl[f(i)]=cl[f(i)]||[]).push(m)});
+  let best=null;
+  for(const k in cl){
+    const G=cl[k];if(G.length<2||G.length>4)continue;
+    const mx=G.reduce((t,m)=>t+m.x,0)/G.length,sc=Math.abs(mx-cx)-3*G.length;
+    if(!best||sc<best.sc)best={sc,G};
+  }
+  const use=best?best.G:ms;
+  const x0=Math.min(...use.map(m=>m.x0)),x1=Math.max(...use.map(m=>m.x1)),y0=Math.min(...use.map(m=>m.y0)),y1=Math.max(...use.map(m=>m.y1));
+  const sz=Math.max(...use.map(m=>m.sz)),pad=Math.round(0.7*sz);
+  const bx0=Math.max(0,x0-pad),bx1=Math.min(c.w,x1+pad),by0=Math.max(0,y0-pad),by1=Math.min(c.h,y1+pad);
+  return {g:cropGray(c.g,c.w,bx0,by0,bx1,by1),w:bx1-bx0,h:by1-by0};
+}
+// cells: [{g,w,h}] of one column (same width). Returns, per row, a tight crop around the amp number or null.
+function ampSubs(cells){
+  if(!cells.length)return [];
+  const marks=[],cands=ampColumnCandidates(cells,marks);let best=null;
+  // try each candidate strip and keep the one whose crops read best as amp numbers
+  for(const col of cands){
+    const subs=cells.map((c,i)=>{const ms=marks[i].filter(m=>m.x>=col.x0&&m.x<=col.x1);return ms.length?ampSubOf(c,ms,col.cx):null});
+    let sc=0;
+    for(const s of subs){if(!s)continue;let q=null;try{q=ampRead(s.g,s.w,s.h)}catch(e){}if(q&&q.cost<0.75)sc+=0.75-q.cost}
+    if(!best||sc>best.sc)best={sc,subs};
+  }
+  return best?best.subs:cells.map(()=>null);
+}
+function ampGroups(g,w,h){
+  const res=[];
+  for(const pol of [0,1]){
+    const gg=pol?g.map(v=>255-v):g;
+    const dark=localDarkMask(gg,w,h,Math.max(6,Math.round(h*.25)),25);
+    const comps=[];
+    for(const c of markComponents(dark,w,h)){
+      if(!(c.h>=0.22*h&&c.h<=0.85*h&&c.pix.length>=8&&c.x0>0&&c.y0>0&&c.x1<w-1&&c.y1<h-1))continue;
+      if(c.w<=1.0*c.h){comps.push(c);continue}
+      if(c.w>2.6*c.h)continue;
+      comps.push(...splitGlued(c,w));
+    }
+    comps.sort((a,b)=>a.x0-b.x0);
+    const groups=[];
+    for(const c of comps){
+      const gr=groups.find(G=>{const l=G[G.length-1],hh=Math.max(l.h,c.h);return c.x0-l.x1<=0.9*hh&&Math.abs((c.y0+c.y1)/2-(l.y0+l.y1)/2)<=0.35*hh&&Math.min(l.h,c.h)/hh>=0.65});
+      if(gr)gr.push(c);else groups.push([c]);
+    }
+    for(const G of groups){if(G.length<2||G.length>3)continue;res.push({w,pieces:G.map(c=>({x0:c.x0,y0:c.y0,x1:c.x1,y1:c.y1,pix:c.pix}))})}
+  }
+  return res;
+}
+function digitCostB(P,ch,W,noBank){
+  const pg=P._g||(P._g=pieceGrid(P,W));let best=digitCost(P,ch,W)+0.12;
+  if(!noBank)for(const e of (AMP_BANK[ch]||[])){const c=gridDist(pg.g,e.g)*3+0.25*Math.abs(Math.log(pg.aspect/e.aspect));if(c<best)best=c}
+  return best;
+}
+function ampWordCost(gr,word,noBank){return word.split('').reduce((t,ch,k)=>t+digitCostB(gr.pieces[k],ch,gr.w,noBank),0)/word.length}
+function ampOrients(g,w,h){return [[g,w,h],[rotateGray(g,w,h,1),h,w],[rotateGray(g,w,h,-1),h,w]]}
+function ampRead(g,w,h){
+  const cands=[];
+  for(const [gg,ww,hh] of ampOrients(g,w,h))for(const gr of ampGroups(gg,ww,hh))
+    for(const word of AMP_WORDS.filter(a=>a.length===gr.pieces.length))cands.push({word,cost:ampWordCost(gr,word)+(AMP_RARE.has(word)?0.08:0)});
+  if(!cands.length)return null;
+  cands.sort((a,b)=>a.cost-b.cost);
+  const top=cands[0],other=cands.find(c=>c.word!==top.word);
+  return {word:top.word,cost:top.cost,margin:other?other.cost-top.cost:1,alts:[...new Set(cands.map(c=>c.word))].slice(0,4)};
+}
+// Stores the digit shapes of a value the person confirmed.
+function ampTeach(g,w,h,word,learn){
+  let best=null;
+  for(const [gg,ww,hh] of ampOrients(g,w,h))for(const gr of ampGroups(gg,ww,hh)){
+    if(gr.pieces.length!==word.length)continue;
+    const c=ampWordCost(gr,word,true);
+    if(!best||c<best.c)best={c,gr};
+  }
+  if(!best||best.c>1.1)return false;
+  best.gr.pieces.forEach((P,k)=>{
+    const e=pieceGrid(P,best.gr.w),ch=word[k];
+    (AMP_BANK[ch]=AMP_BANK[ch]||[]).push(e);
+    if(learn){const L=(AMP_LEARNED[ch]=AMP_LEARNED[ch]||[]);L.push(ampEnc(e));if(L.length>14)L.shift()}
+  });
+  return true;
+}
+function ampLearn(g,w,h,word){
+  if(!AMP_WORDS.includes(word))return;
+  if(ampTeach(g,w,h,word,true)){try{localStorage.setItem('bb_ampbank57',JSON.stringify(AMP_LEARNED))}catch(e){}}
+}
+// One row: the new reader first (Confirmed or Probable), the older two-pass reader as backup.
+function phReadAmp(cell,sub){
+  let old=null;try{old=readAmpsTier(cell.g,cell.w,cell.h)}catch(e){}
+  let nw=null;if(sub){try{nw=ampRead(sub.g,sub.w,sub.h)}catch(e){}}
+  if(nw&&nw.cost<0.45&&nw.margin>=0.06){
+    const agree=old&&old.sure&&old.top[0]===nw.word,strong=nw.cost<0.32&&nw.margin>=0.10;
+    const tier=(strong||agree)?'confirmed':'probable';
+    const pct=tier==='confirmed'?Math.min(97,Math.round(100*(1-nw.cost))+8):Math.max(40,Math.min(85,Math.round(100*(1-nw.cost))));
+    return {top:[nw.word].concat(old?old.top:[]),chips:[...new Set([nw.word].concat(nw.alts,old?old.chips:[]))].slice(0,5),tier,pct,sure:true};
+  }
+  return old||{top:[],chips:[],tier:'none',pct:0,sure:false};
+}
+
+ampBankInit();
 
 // Sketch import (Floors mode): finds closed room outlines in a photo of a hand-drawn plan.
 // OpenCV.js loads once, the first time this is used. Detection runs on this device.
@@ -1833,11 +2049,12 @@ document.addEventListener('click',e=>{
   else if(a==='photo'){openPhoto();changed=false}
   else if(a==='phType'){
     if($('phPanel'))phCtx.panel=S.panels.find(x=>x.id===$('phPanel').value)||null;
-    phCtx.kind=t.dataset.v;if(phCtx.panel)$('phFile').click();changed=false;
+    phCtx.closeup=t.dataset.v==='closeup';phCtx.kind=phCtx.closeup?'panel':t.dataset.v;phCtx.side=phCtx.closeup?(phCtx.side||'left'):null;
+    if(phCtx.panel)$('phFile').click();changed=false;
   }
   else if(a==='phCancel'){$('phdlg').classList.remove('open');wizReturn();phReturn();changed=false}
   else if(a==='phReset'||a==='phBackCorners'){phCtx.pts=[];phStage('corners');changed=false}
-  else if(a==='phRead'){phCtx.cols=+($('phCols')?.value||2);phProcess();changed=false}
+  else if(a==='phRead'){if(phCtx.closeup){phCtx.cols=1;phCtx.side=$('phSide')?.value||phCtx.side||'left'}else{phCtx.cols=+($('phCols')?.value||2);phCtx.side=null}phProcess();changed=false}
   else if(a==='phAmp'){const el=document.querySelector(`[data-pa="${t.dataset.i}"]`);if(el)el.value=t.dataset.v;changed=false}
   else if(a==='phSame'){const i=+t.dataset.i,a0=document.querySelector(`[data-pl="${i-1}"]`),el=document.querySelector(`[data-pl="${i}"]`);if(el&&a0)el.value=a0.value;changed=false}
   else if(a==='phLab'){const el=document.querySelector(`[data-pl="${t.dataset.i}"]`);if(el)el.value=t.dataset.v;changed=false}
@@ -1950,7 +2167,8 @@ document.addEventListener('change',e=>{
   if(e.target.id==='phFile'){const f=e.target.files[0];e.target.value='';if(f)phLoad(f);return}
   if(e.target.dataset&&e.target.dataset.p2!==undefined){phJoin(+e.target.dataset.p2,e.target.checked);return}
   if(e.target.id==='phCols'){phCtx.cols=+e.target.value;return}
-  if(e.target.id==='phSlots'){phCtx.slots=clamp(+e.target.value||24,2,84);phCtx.rowPh=0;phBuildRows();phStage('rows');return}
+  if(e.target.id==='phSide'){phCtx.side=e.target.value;return}
+  if(e.target.id==='phSlots'){phCtx.slots=clamp(+e.target.value||24,2,84);phCtx.rowPh=0;phCtx.maxR=Math.ceil(phCtx.slots/(phCtx.side?2:phCtx.cols));phBuildRows();phStage('rows');return}
   if(e.target.id==='phNum'){phCtx.numbering=e.target.value;phBuildRows();phStage('rows');return}
   if(e.target.dataset&&e.target.dataset.pf!==undefined){const rows=readPanelRows();rows[+e.target.dataset.pf].room='';W.panelRows=rows;showWiz();return}
   if(e.target.dataset&&e.target.dataset.fl!==undefined){
